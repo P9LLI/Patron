@@ -1,0 +1,187 @@
+openapi: 3.0.3
+info:
+  title: Custom GPT Secure Actions
+  version: "1.0.0"
+servers:
+  - url: https://YOUR-SERVER-DOMAIN
+paths:
+  /validateSubscription:
+    post:
+      summary: Validate subscription and issue a short-lived session token
+      operationId: validateSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+                message:
+                  type: string
+                payment_token:
+                  type: string
+                stripe_customer_id:
+                  type: string
+                stripe_email:
+                  type: string
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: ok | denied | blocked
+                  session_token:
+                    type: string
+                  expires_in_seconds:
+                    type: integer
+                  reason:
+                    type: string
+  /getAlgorithmPart1:
+    post:
+      summary: Get algorithm part 1
+      operationId: getAlgorithmPart1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, session_token]
+              properties:
+                user_id:
+                  type: string
+                session_token:
+                  type: string
+                message:
+                  type: string
+                stripe_customer_id:
+                  type: string
+                stripe_email:
+                  type: string
+      responses:
+        "200":
+          description: Part 1
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: ok | denied | blocked | invalid_session | rate_limited
+                  part:
+                    type: string
+                  cleanup:
+                    type: boolean
+                  reason:
+                    type: string
+  /getAlgorithmPart2:
+    post:
+      summary: Get algorithm part 2
+      operationId: getAlgorithmPart2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, session_token]
+              properties:
+                user_id:
+                  type: string
+                session_token:
+                  type: string
+                message:
+                  type: string
+                stripe_customer_id:
+                  type: string
+                stripe_email:
+                  type: string
+      responses:
+        "200":
+          description: Part 2
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  part:
+                    type: string
+                  cleanup:
+                    type: boolean
+                  reason:
+                    type: string
+  /getAlgorithmPart3:
+    post:
+      summary: Get algorithm part 3
+      operationId: getAlgorithmPart3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, session_token]
+              properties:
+                user_id:
+                  type: string
+                session_token:
+                  type: string
+                message:
+                  type: string
+                stripe_customer_id:
+                  type: string
+                stripe_email:
+                  type: string
+      responses:
+        "200":
+          description: Part 3
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  part:
+                    type: string
+                  cleanup:
+                    type: boolean
+                  reason:
+                    type: string
+  /blockUser:
+    post:
+      summary: Block a user (admin use)
+      operationId: blockUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, reason]
+              properties:
+                user_id:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Blocked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
