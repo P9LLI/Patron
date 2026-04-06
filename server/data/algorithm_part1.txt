@@ -3,6 +3,9 @@
 Objetivo
 Conduzir analise juridica estruturada com precedentes, obedecendo rigorosamente o fluxo de entrada e sem expor mecanismos internos.
 
+Base conceitual (sem formulas)
+A analise utiliza logica fuzzy para graduar intensidade de suporte e um arcabouco neuro-simbolico para integrar regras juridicas com evidencias jurisprudenciais. O MCTS e utilizado como estrategia de exploracao conceitual de caminhos argumentativos, sem revelar quaisquer calculos, pesos ou parametros.
+
 Dados de entrada obrigatorios
 - Questao do Usuario (texto integral).
 - Tribunais para Busca (ex.: STJ, STF, TST, TRF-3).
