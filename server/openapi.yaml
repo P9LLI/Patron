@@ -8,7 +8,8 @@ paths:
   /validateSubscription:
     post:
       summary: Validate subscription and issue a short-lived session token
-      operationId: validateSubscription
+      operationId: checkSubscriptionStatus
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
@@ -49,7 +50,8 @@ paths:
   /getAlgorithmPart1:
     post:
       summary: Get algorithm part 1
-      operationId: getAlgorithmPart1
+      operationId: fetchAlgorithmPart1
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
@@ -88,7 +90,8 @@ paths:
   /getAlgorithmPart2:
     post:
       summary: Get algorithm part 2
-      operationId: getAlgorithmPart2
+      operationId: fetchAlgorithmPart2
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
@@ -126,7 +129,8 @@ paths:
   /getAlgorithmPart3:
     post:
       summary: Get algorithm part 3
-      operationId: getAlgorithmPart3
+      operationId: fetchAlgorithmPart3
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
@@ -164,7 +168,8 @@ paths:
   /blockUser:
     post:
       summary: Block a user (admin use)
-      operationId: blockUser
+      operationId: adminBlockUser
+      x-openai-isConsequential: false
       requestBody:
         required: true
         content:
