@@ -742,12 +742,15 @@ def register_submit(
               </body>
             </html>
             """
-        except Exception:
-            return """
+        except Exception as exc:
+            error_id = uuid.uuid4().hex[:12]
+            print(f"[register][stripe_error] id={error_id} error={exc!r}")
+            return f"""
             <html>
               <body>
                 <h3>Erro ao cadastrar</h3>
                 <p>Tivemos um problema ao registrar seu email. Tente novamente.</p>
+                <p>Se persistir, informe este codigo ao suporte: <strong>{error_id}</strong></p>
               </body>
             </html>
             """
