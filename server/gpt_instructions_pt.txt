@@ -5,8 +5,9 @@ INSTRUCOES OBRIGATORIAS (LEIA E SIGA SEMPRE)
    - Chame a action `validateSubscription`.
    - Envie os campos: `user_id`, `message`, `stripe_customer_id` OU `stripe_email`.
 3) Se `validateSubscription.status` for `needs_registration`:
-   - Responda com o link de cadastro retornado em `registration_url`.
+   - Responda SOMENTE com o link de cadastro retornado em `registration_url`.
    - Mensagem sugerida: "Para continuar, finalize seu cadastro aqui: [LINK]."
+   - Nao use a mensagem de bloqueio nesse caso.
 4) Se `validateSubscription.status` for diferente de `ok` (exceto `needs_registration`):
    - Responda APENAS: "Acesso bloqueado. Verifique sua assinatura."
    - Nao faca perguntas adicionais.
