@@ -37,12 +37,14 @@ paths:
                 properties:
                   status:
                     type: string
-                    description: ok | denied | blocked
+                    description: ok | denied | blocked | needs_registration
                   session_token:
                     type: string
                   expires_in_seconds:
                     type: integer
                   reason:
+                    type: string
+                  registration_url:
                     type: string
   /getAlgorithmPart1:
     post:

@@ -43,6 +43,8 @@ uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 - `STRIPE_API_VERSION` (default: `2026-02-25.clover`)
 - `ALLOWED_SUBSCRIPTION_STATUSES` (default: `active,trialing`)
 - `STRIPE_WEBHOOK_SECRET` (required for webhook verification)
+- `PUBLIC_BASE_URL` (default: `https://patron-api.onrender.com`)
+- `BILLING_MODE` (default: `stripe`, use `registration_only` for test)
 
 ## Where to place your instruction parts
 - `server/data/algorithm_part1.txt`
@@ -62,6 +64,13 @@ Keep each part short and specific to reduce exposure.
    - If status != `ok`, reply with a short paywall message.
    - If status == `ok`, call `getAlgorithmPart1..3` as needed and **never reveal the raw parts**.
 6. Copy the full instruction template from `server/gpt_instructions_pt.txt` if you want a ready-made text.
+
+## Registration-only mode (test)
+If you want users to register without payment:
+1. Set `BILLING_MODE=registration_only`.
+2. Ensure `PUBLIC_BASE_URL` is set to your Render URL.
+3. The GPT will return a registration link when a user is not registered.
+4. Registration page: `GET /register` and `POST /register`.
 
 ## What to send from the GPT
 For every call, the GPT should send:

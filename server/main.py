@@ -10,7 +10,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Form
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 import stripe
 
@@ -24,6 +25,8 @@ OBFUSCATE_ENABLED = os.getenv("OBFUSCATE_ENABLED", "true").lower() == "true"
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.getenv("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://patron-api.onrender.com")
+BILLING_MODE = os.getenv("BILLING_MODE", "stripe")  # stripe | registration_only
 ALLOWED_SUBSCRIPTION_STATUSES = {
     status.strip().lower()
     for status in os.getenv("ALLOWED_SUBSCRIPTION_STATUSES", "active,trialing").split(",")
@@ -119,6 +122,21 @@ def init_db() -> None:
                 user_id TEXT PRIMARY KEY,
                 reason TEXT NOT NULL,
                 blocked_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                cpf TEXT NOT NULL,
+                oab_number TEXT NOT NULL,
+                oab_state TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                status TEXT NOT NULL
             )
             """
         )
@@ -272,10 +290,11 @@ def is_subscription_active(
     stripe_email: Optional[str],
 ) -> bool:
     """
-    Validates subscription in Stripe. Returns True only if a subscription
-    is active/trialing (configurable via ALLOWED_SUBSCRIPTION_STATUSES).
+    Validates subscription in Stripe (default) or registration-only mode.
     """
     _ = payment_token
+    if BILLING_MODE == "registration_only":
+        return is_registered(user_id, stripe_email)
     if not STRIPE_SECRET_KEY:
         return False
     if not user_id:
@@ -300,6 +319,25 @@ def is_subscription_active(
         if sub.status:
             cache_subscription_status(customer_id, sub.status)
             if sub.status.lower() in ALLOWED_SUBSCRIPTION_STATUSES:
+                return True
+    return False
+
+
+def is_registered(user_id: str, email: Optional[str]) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        if user_id:
+            cur = conn.execute(
+                "SELECT 1 FROM registrations WHERE user_id = ? AND status = 'active'",
+                (user_id,),
+            )
+            if cur.fetchone():
+                return True
+        if email:
+            cur = conn.execute(
+                "SELECT 1 FROM registrations WHERE email = ? AND status = 'active'",
+                (email,),
+            )
+            if cur.fetchone():
                 return True
     return False
 
@@ -370,6 +408,7 @@ class ValidateResponse(BaseModel):
     session_token: Optional[str] = None
     expires_in_seconds: Optional[int] = None
     reason: Optional[str] = None
+    registration_url: Optional[str] = None
 
 
 class PartRequest(BaseModel):
@@ -446,6 +485,21 @@ def validate_subscription(payload: ValidateRequest, request: Request) -> Validat
         payload.stripe_customer_id,
         payload.stripe_email,
     ):
+        if BILLING_MODE == "registration_only":
+            reg_url = f\"{PUBLIC_BASE_URL}/register?user_id={payload.user_id}&email={payload.stripe_email or ''}\"
+            log_event(
+                user_id=payload.user_id,
+                endpoint="validateSubscription",
+                status="needs_registration",
+                reason="not_registered",
+                ip=ip,
+                message=payload.message,
+            )
+            return ValidateResponse(
+                status="needs_registration",
+                reason="not_registered",
+                registration_url=reg_url,
+            )
         log_event(
             user_id=payload.user_id,
             endpoint="validateSubscription",
@@ -574,6 +628,61 @@ def get_algorithm_part2(payload: PartRequest, request: Request) -> PartResponse:
 @app.post("/getAlgorithmPart3", response_model=PartResponse)
 def get_algorithm_part3(payload: PartRequest, request: Request) -> PartResponse:
     return serve_part("algorithm_part3.txt", payload, request)
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_form(user_id: str = "", email: str = "") -> str:
+    return f"""
+    <html>
+      <head><title>Cadastro PATRON</title></head>
+      <body>
+        <h2>Cadastro PATRON (teste)</h2>
+        <p>Preencha os dados para liberar o acesso.</p>
+        <form method="post" action="/register">
+          <input type="hidden" name="user_id" value="{user_id}" />
+          <label>Nome completo:</label><br/>
+          <input name="full_name" required /><br/><br/>
+          <label>Email:</label><br/>
+          <input name="email" value="{email}" required /><br/><br/>
+          <label>CPF:</label><br/>
+          <input name="cpf" required /><br/><br/>
+          <label>OAB (numero):</label><br/>
+          <input name="oab_number" required /><br/><br/>
+          <label>OAB (estado):</label><br/>
+          <input name="oab_state" required /><br/><br/>
+          <button type="submit">Cadastrar</button>
+        </form>
+        <p>Ao enviar, voce concorda com o uso dos dados para validacao de acesso.</p>
+      </body>
+    </html>
+    """
+
+
+@app.post("/register", response_class=HTMLResponse)
+def register_submit(
+    user_id: str = Form(""),
+    full_name: str = Form(...),
+    email: str = Form(...),
+    cpf: str = Form(...),
+    oab_number: str = Form(...),
+    oab_state: str = Form(...),
+) -> str:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO registrations (user_id, full_name, email, cpf, oab_number, oab_state, created_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+            """,
+            (user_id, full_name, email, cpf, oab_number, oab_state, int(time.time())),
+        )
+    return """
+    <html>
+      <body>
+        <h3>Cadastro concluido</h3>
+        <p>Volte ao GPT e tente novamente.</p>
+      </body>
+    </html>
+    """
 
 
 @app.post("/blockUser")
