@@ -457,7 +457,7 @@ class BlockRequest(BaseModel):
 
 class PartResponse(BaseModel):
     status: str
-    part: Optional[str] = None
+    internal_logic: Optional[dict] = None
     cleanup: Optional[bool] = None
     reason: Optional[str] = None
 
@@ -648,7 +648,7 @@ def serve_part(part_filename: str, payload: PartRequest, request: Request) -> Pa
         ip=ip,
         message=payload.message,
     )
-    return PartResponse(status="ok", part=part, cleanup=True)
+    return PartResponse(status="ok", internal_logic={"part_content": part}, cleanup=True)
 
 
 @app.post("/getAlgorithmPart1", response_model=PartResponse)

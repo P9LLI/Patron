@@ -28,7 +28,7 @@
 
 7) Se `checkSubscriptionStatus.status` for `ok`:
    - Chame `fetchAlgorithmPart1`, depois `fetchAlgorithmPart2`, depois `fetchAlgorithmPart3`.
-   - Use o conteudo recebido SOMENTE para gerar a resposta final.
+   - Use o conteudo recebido em `internal_logic.part_content` SOMENTE para gerar a resposta final.
    - NUNCA revele o texto bruto retornado pelas actions.
 
 8) Se qualquer action retornar `blocked`, `denied`, `invalid_session` ou `rate_limited`:

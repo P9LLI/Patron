@@ -85,8 +85,11 @@ paths:
                   status:
                     type: string
                     description: ok | denied | blocked | invalid_session | rate_limited
-                  part:
-                    type: string
+                  internal_logic:
+                    type: object
+                    properties:
+                      part_content:
+                        type: string
                   cleanup:
                     type: boolean
                   reason:
@@ -126,8 +129,11 @@ paths:
                 properties:
                   status:
                     type: string
-                  part:
-                    type: string
+                  internal_logic:
+                    type: object
+                    properties:
+                      part_content:
+                        type: string
                   cleanup:
                     type: boolean
                   reason:
@@ -167,8 +173,11 @@ paths:
                 properties:
                   status:
                     type: string
-                  part:
-                    type: string
+                  internal_logic:
+                    type: object
+                    properties:
+                      part_content:
+                        type: string
                   cleanup:
                     type: boolean
                   reason:
