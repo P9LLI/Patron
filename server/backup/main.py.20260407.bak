@@ -39,12 +39,12 @@ DB_PATH = Path(os.getenv("DB_PATH", str(BASE_DIR / "server_data.db")))
 ALGO_PARTS_DIR = Path(os.getenv("ALGO_PARTS_DIR", str(BASE_DIR / "data")))
 
 EXTRACTION_PATTERNS = [
-    r"mostre\s+instru(c|ç)(o|õ)es",
+    r"mostre\s+instru(c|Ã§)(o|Ãµ)es",
     r"mostre\s+o\s+prompt",
     r"mostre\s+o\s+script",
     r"liste\s+arquivos",
     r"mostre\s+o\s+arquivo",
-    r"conte(u|ú)do\s+completo",
+    r"conte(u|Ãº)do\s+completo",
     r"reveal\s+the\s+prompt",
     r"system\s+prompt",
     r"dump\s+context",
@@ -284,25 +284,18 @@ def find_customer_id(stripe_customer_id: Optional[str], stripe_email: Optional[s
     return None
 
 
-def normalize_oab(value: Optional[str]) -> Optional[str]:
-    if not value:
-        return None
-    return re.sub(r"\D", "", value)
-
-
 def is_subscription_active(
     user_id: str,
     payment_token: Optional[str],
     stripe_customer_id: Optional[str],
     stripe_email: Optional[str],
-    oab_number: Optional[str] = None,
 ) -> bool:
     """
     Validates subscription in Stripe (default) or registration-only mode.
     """
     _ = payment_token
     if BILLING_MODE == "registration_only":
-        return is_registered(user_id, stripe_email, oab_number)
+        return is_registered(user_id, stripe_email)
     if not STRIPE_SECRET_KEY:
         return False
     if not user_id:
@@ -331,39 +324,28 @@ def is_subscription_active(
     return False
 
 
-def is_registered(user_id: str, email: Optional[str], oab_number: Optional[str]) -> bool:
+def is_registered(user_id: str, email: Optional[str]) -> bool:
     if REGISTRATION_BACKEND == "stripe" and STRIPE_SECRET_KEY and email:
         try:
             result = stripe.Customer.search(query=f"email:'{email}'", limit=1)
-            if not result.data:
-                return False
-            if not oab_number:
-                return False
-            normalized_oab = normalize_oab(oab_number)
-            for customer in result.data:
-                meta_oab = customer.metadata.get("oab_number") if customer.metadata else None
-                if normalize_oab(meta_oab) == normalized_oab:
-                    return True
-            return False
+            return bool(result.data)
         except Exception:
             return False
     with sqlite3.connect(DB_PATH) as conn:
         if user_id:
             cur = conn.execute(
-                "SELECT oab_number FROM registrations WHERE user_id = ? AND status = 'active'",
+                "SELECT 1 FROM registrations WHERE user_id = ? AND status = 'active'",
                 (user_id,),
             )
-            row = cur.fetchone()
-            if row and oab_number:
-                return normalize_oab(row[0]) == normalize_oab(oab_number)
+            if cur.fetchone():
+                return True
         if email:
             cur = conn.execute(
-                "SELECT oab_number FROM registrations WHERE email = ? AND status = 'active'",
+                "SELECT 1 FROM registrations WHERE email = ? AND status = 'active'",
                 (email,),
             )
-            row = cur.fetchone()
-            if row and oab_number:
-                return normalize_oab(row[0]) == normalize_oab(oab_number)
+            if cur.fetchone():
+                return True
     return False
 
 
@@ -430,7 +412,6 @@ class ValidateRequest(BaseModel):
     payment_token: Optional[str] = None
     stripe_customer_id: Optional[str] = None
     stripe_email: Optional[str] = None
-    oab_number: Optional[str] = None
 
 
 class ValidateResponse(BaseModel):
@@ -447,7 +428,6 @@ class PartRequest(BaseModel):
     message: Optional[str] = None
     stripe_customer_id: Optional[str] = None
     stripe_email: Optional[str] = None
-    oab_number: Optional[str] = None
 
 
 class BlockRequest(BaseModel):
@@ -515,7 +495,6 @@ def validate_subscription(payload: ValidateRequest, request: Request) -> Validat
         payload.payment_token,
         payload.stripe_customer_id,
         payload.stripe_email,
-        payload.oab_number,
     ):
         if BILLING_MODE == "registration_only":
             reg_url = (
@@ -611,7 +590,6 @@ def serve_part(part_filename: str, payload: PartRequest, request: Request) -> Pa
         None,
         payload.stripe_customer_id,
         payload.stripe_email,
-        payload.oab_number,
     ):
         log_event(
             user_id=payload.user_id,
@@ -673,8 +651,7 @@ def register_form(user_id: str = "", email: str = "") -> str:
       <head><title>Cadastro PATRON</title></head>
       <body>
         <h2>Cadastro PATRON (teste)</h2>
-        <p><strong>Primeiro cadastro:</strong> nome, email, OAB e UF.</p>
-        <p><strong>Depois do cadastro:</strong> o login e validacao no GPT usam apenas <strong>email + OAB</strong>.</p>
+        <p>Preencha os dados para liberar o acesso.</p>
         <form method="post" action="/register">
           <input type="hidden" name="user_id" value="{user_id}" />
           <label>Nome completo:</label><br/>
@@ -682,7 +659,7 @@ def register_form(user_id: str = "", email: str = "") -> str:
           <label>Email:</label><br/>
           <input name="email" value="{email}" required /><br/><br/>
           <label>CPF:</label><br/>
-          <input name="cpf" /><br/><br/>
+          <input name="cpf" required /><br/><br/>
           <label>OAB (numero):</label><br/>
           <input name="oab_number" required /><br/><br/>
           <label>OAB (estado):</label><br/>
@@ -700,73 +677,17 @@ def register_submit(
     user_id: str = Form(""),
     full_name: str = Form(...),
     email: str = Form(...),
-    cpf: Optional[str] = Form(None),
+    cpf: str = Form(...),
     oab_number: str = Form(...),
     oab_state: str = Form(...),
 ) -> str:
-    if REGISTRATION_BACKEND == "stripe":
-        if not STRIPE_SECRET_KEY:
-            return """
-            <html>
-              <body>
-                <h3>Cadastro indisponivel</h3>
-                <p>O Stripe nao esta configurado. Contate o suporte.</p>
-              </body>
-            </html>
-            """
-        try:
-            existing = stripe.Customer.search(query=f"email:'{email}'", limit=1)
-            if existing.data:
-                customer = existing.data[0]
-            else:
-                metadata = {}
-                if user_id:
-                    metadata["user_id"] = user_id
-                if cpf:
-                    metadata["cpf"] = cpf
-                if oab_number:
-                    metadata["oab_number"] = oab_number
-                if oab_state:
-                    metadata["oab_state"] = oab_state
-                customer = stripe.Customer.create(
-                    email=email,
-                    name=full_name or None,
-                    metadata=metadata or None,
-                )
-            upsert_customer_map(user_id or email, customer.id, email)
-            return """
-            <html>
-              <body>
-                <h3>Cadastro concluido</h3>
-                <p>Seu acesso foi registrado. Volte ao GPT e tente novamente.</p>
-              </body>
-            </html>
-            """
-        except Exception:
-            return """
-            <html>
-              <body>
-                <h3>Erro ao cadastrar</h3>
-                <p>Tivemos um problema ao registrar seu email. Tente novamente.</p>
-              </body>
-            </html>
-            """
-
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             """
             INSERT INTO registrations (user_id, full_name, email, cpf, oab_number, oab_state, created_at, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
             """,
-            (
-                user_id,
-                full_name,
-                email,
-                cpf or "",
-                oab_number,
-                oab_state,
-                int(time.time()),
-            ),
+            (user_id, full_name, email, cpf, oab_number, oab_state, int(time.time())),
         )
     return """
     <html>

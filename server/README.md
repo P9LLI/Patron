@@ -45,6 +45,7 @@ uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 - `STRIPE_WEBHOOK_SECRET` (required for webhook verification)
 - `PUBLIC_BASE_URL` (default: `https://patron-api.onrender.com`)
 - `BILLING_MODE` (default: `stripe`, use `registration_only` for test)
+- `REGISTRATION_BACKEND` (default: `local`, use `stripe` to persist registrations as Stripe Customers)
 
 ## Where to place your instruction parts
 - `server/data/algorithm_part1.txt`
@@ -69,6 +70,7 @@ Keep each part short and specific to reduce exposure.
 If you want users to register without payment:
 1. Set `BILLING_MODE=registration_only`.
 2. Ensure `PUBLIC_BASE_URL` is set to your Render URL.
+3. Optional: set `REGISTRATION_BACKEND=stripe` to persist the registration in Stripe (uses the email).
 3. The GPT will return a registration link when a user is not registered.
 4. Registration page: `GET /register` and `POST /register`.
 
