@@ -486,7 +486,10 @@ def validate_subscription(payload: ValidateRequest, request: Request) -> Validat
         payload.stripe_email,
     ):
         if BILLING_MODE == "registration_only":
-            reg_url = f\"{PUBLIC_BASE_URL}/register?user_id={payload.user_id}&email={payload.stripe_email or ''}\"
+            reg_url = (
+                f"{PUBLIC_BASE_URL}/register?user_id={payload.user_id}"
+                f"&email={payload.stripe_email or ''}"
+            )
             log_event(
                 user_id=payload.user_id,
                 endpoint="validateSubscription",
