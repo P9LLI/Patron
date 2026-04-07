@@ -375,7 +375,11 @@ def load_algorithm_part(part_name: str) -> str:
     part_path = ALGO_PARTS_DIR / part_name
     if not part_path.exists():
         raise FileNotFoundError(f"Missing algorithm part: {part_path}")
-    return part_path.read_text(encoding="utf-8")
+    try:
+        return part_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Fallback for Windows-1252/Latin-1 encodings
+        return part_path.read_text(encoding="latin-1")
 
 
 def obfuscate_text(text: str) -> str:
