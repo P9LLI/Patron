@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import os
@@ -6,7 +6,7 @@ import re
 import sqlite3
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 import stripe
+import random
 
 APP_TITLE = "Custom GPT Secure Actions"
 
@@ -21,13 +22,126 @@ TOKEN_TTL_MINUTES = int(os.getenv("TOKEN_TTL_MINUTES", "10"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "3600"))
 RATE_LIMIT_MAX_CALLS = int(os.getenv("RATE_LIMIT_MAX_CALLS", "10"))
 LOG_FULL_MESSAGE = os.getenv("LOG_FULL_MESSAGE", "false").lower() == "true"
-OBFUSCATE_ENABLED = os.getenv("OBFUSCATE_ENABLED", "true").lower() == "true"
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.getenv("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://patron-api.onrender.com")
 BILLING_MODE = os.getenv("BILLING_MODE", "stripe")  # stripe | registration_only
 REGISTRATION_BACKEND = os.getenv("REGISTRATION_BACKEND", "local")  # local | stripe
+
+# ---------------------------------------------------------------------------
+# SPLIT-KNOWLEDGE â€” METADE B (servidor)
+# Os esquemas de rotaÃ§Ã£o e perfis de Ã¡rea vivem APENAS no servidor.
+# O GPT recebe cfg codificado + sk; sem os esquemas (Metade A), cfg Ã© inÃºtil.
+# ---------------------------------------------------------------------------
+
+# 4 esquemas de rotaÃ§Ã£o: mapeiam parÃ¢metros reais para aliases de sessÃ£o
+_SK_SCHEMES: dict[str, dict[str, str]] = {
+    "A": {"alpha":"a1","beta":"a2","gamma":"a3","delta":"a4",
+          "C":"m1","depth":"m2",
+          "we":"r1","wm":"r2","ld":"r3","lw":"r4","wt":"r5"},
+    "B": {"alpha":"x1","beta":"x2","gamma":"x3","delta":"x4",
+          "C":"y1","depth":"y2",
+          "we":"s1","wm":"s2","ld":"s3","lw":"s4","wt":"s5"},
+    "C": {"alpha":"p", "beta":"q", "gamma":"r", "delta":"s",
+          "C":"t", "depth":"u",
+          "we":"f1","wm":"f2","ld":"f3","lw":"f4","wt":"f5"},
+    "D": {"alpha":"n1","beta":"n2","gamma":"n3","delta":"n4",
+          "C":"k1","depth":"k2",
+          "we":"d1","wm":"d2","ld":"d3","lw":"d4","wt":"d5"},
+}
+
+# Pool de nomes para campos decoy (nÃ£o usados em nenhum esquema real)
+_DECOY_POOL: list[str] = [
+    "z9","k3","v7","j2","b5","w4","q8","h6",
+    "e1","g3","c7","t2","o5","l8","i4","y9",
+]
+
+# Perfis por area carregados apenas no servidor
+# alpha=fatos beta=conseq gamma=juris delta=princ | C=exploracao depth=profundidade
+# we=peso_aresta wm=peso_no ld=pen_div lw=pen_elo wt=limiar_elo
+_AREA_PARAMS: dict[str, dict[str, float]] = {
+    "civil":               {"alpha":0.35,"beta":0.25,"gamma":0.25,"delta":0.15,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "trabalhista":         {"alpha":0.25,"beta":0.20,"gamma":0.40,"delta":0.15,"C":0.30,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "tributario":          {"alpha":0.25,"beta":0.25,"gamma":0.20,"delta":0.30,"C":0.50,"depth":10,"we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "constitucional":      {"alpha":0.20,"beta":0.15,"gamma":0.25,"delta":0.40,"C":0.50,"depth":10,"we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "penal":               {"alpha":0.40,"beta":0.25,"gamma":0.20,"delta":0.15,"C":0.50,"depth":5, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "administrativo":      {"alpha":0.30,"beta":0.25,"gamma":0.25,"delta":0.20,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "consumidor":          {"alpha":0.30,"beta":0.30,"gamma":0.25,"delta":0.15,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.30,"lw":0.20,"wt":0.30},
+    "societario":          {"alpha":0.30,"beta":0.25,"gamma":0.25,"delta":0.20,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "bancario_financeiro":  {"alpha":0.30,"beta":0.25,"gamma":0.25,"delta":0.20,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.30,"lw":0.20,"wt":0.30},
+    "imobiliario_patrimonial":{"alpha":0.35,"beta":0.25,"gamma":0.20,"delta":0.20,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "sucessorio":          {"alpha":0.30,"beta":0.25,"gamma":0.20,"delta":0.25,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.30,"lw":0.20,"wt":0.30},
+    "medico":              {"alpha":0.35,"beta":0.30,"gamma":0.20,"delta":0.15,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.30,"lw":0.20,"wt":0.30},
+    "regulatorio":         {"alpha":0.25,"beta":0.25,"gamma":0.20,"delta":0.30,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "penal_economico":     {"alpha":0.35,"beta":0.25,"gamma":0.20,"delta":0.20,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "ambiental":           {"alpha":0.25,"beta":0.25,"gamma":0.20,"delta":0.30,"C":0.50,"depth":10,"we":0.40,"wm":0.40,"ld":0.30,"lw":0.20,"wt":0.30},
+    "empresarial":         {"alpha":0.30,"beta":0.30,"gamma":0.20,"delta":0.20,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+    "eleitoral":           {"alpha":0.25,"beta":0.20,"gamma":0.25,"delta":0.30,"C":0.50,"depth":7, "we":0.40,"wm":0.40,"ld":0.25,"lw":0.20,"wt":0.30},
+}
+
+# Palavras-chave para detecÃ§Ã£o de Ã¡rea a partir da mensagem do usuÃ¡rio
+_AREA_KEYWORDS: dict[str, list[str]] = {
+    "trabalhista":          ["trabalhista","clt","empregado","empregador","rescisÃ£o","tst","trt","horas extras","demissÃ£o","fgts","jornada"],
+    "tributario":           ["tributÃ¡rio","tributo","imposto","icms","iss","irpj","csll","pis","cofins","receita federal","fisco","contribuiÃ§Ã£o"],
+    "constitucional":       ["constitucional","stf","adin","adpf","repercussÃ£o geral","mandado de injunÃ§Ã£o","direito fundamental","habeas corpus"],
+    "penal":                ["penal","crime","rÃ©u","denÃºncia","inquÃ©rito","tjcrim","vara criminal","absolviÃ§Ã£o","condenaÃ§Ã£o","pena","delito"],
+    "administrativo":       ["administrativo","licitaÃ§Ã£o","contrato administrativo","concurso pÃºblico","servidor pÃºblico","ato administrativo","improbidade"],
+    "consumidor":           ["consumidor","cdc","procon","fornecedor","vÃ­cio","defeito","recall","dano moral consumidor"],
+    "societario":           ["societÃ¡rio","sociedade","sÃ³cio","quotas","aÃ§Ãµes","dissoluÃ§Ã£o","holding","contrato social"],
+    "bancario_financeiro":  ["bancÃ¡rio","banco","financeiro","crÃ©dito","juros","financiamento","emprÃ©stimo","cdi","bacen","bc"],
+    "imobiliario_patrimonial":["imobiliÃ¡rio","imÃ³vel","compra e venda","escritura","matrÃ­cula","hipoteca","alienaÃ§Ã£o fiduciÃ¡ria","condomÃ­nio","locaÃ§Ã£o"],
+    "sucessorio":           ["sucessÃ³rio","heranÃ§a","inventÃ¡rio","testamento","herdeiro","espÃ³lio","partilha","legado"],
+    "medico":               ["mÃ©dico","hospital","erro mÃ©dico","plano de saÃºde","cirurgia","negligÃªncia mÃ©dica","perÃ­cia mÃ©dica"],
+    "regulatorio":          ["regulatÃ³rio","agÃªncia reguladora","anatel","anvisa","aneel","antaq","resoluÃ§Ã£o","norma tÃ©cnica"],
+    "penal_economico":      ["penal econÃ´mico","lavagem","corrupÃ§Ã£o","improbidade","desvio","peculato","organizaÃ§Ã£o criminosa","cartel"],
+    "ambiental":            ["ambiental","meio ambiente","licenÃ§a ambiental","ibama","poluiÃ§Ã£o","degradaÃ§Ã£o","Ã¡rea de preservaÃ§Ã£o"],
+    "empresarial":          ["empresarial","empresa","falÃªncia","recuperaÃ§Ã£o judicial","concordata","direito comercial"],
+    "eleitoral":            ["eleitoral","tse","tre","eleiÃ§Ã£o","candidatura","campanha","prestaÃ§Ã£o de contas","inelegibilidade"],
+    "constitucional":       ["constitucional","stf","adin","adpf","repercussÃ£o geral","direito fundamental"],
+}
+
+
+def _detect_area(message: Optional[str]) -> str:
+    """Detecta a Ã¡rea do direito a partir da mensagem do usuÃ¡rio."""
+    if not message:
+        return "civil"
+    msg = message.lower()
+    for area, keywords in _AREA_KEYWORDS.items():
+        if any(kw in msg for kw in keywords):
+            return area
+    return "civil"
+
+
+def _build_cfg(message: Optional[str]) -> tuple[str, str]:
+    """
+    Gera o cfg codificado e o sk (scheme key) para a sessÃ£o.
+    Retorna (cfg_string, sk).
+    O cfg mistura parÃ¢metros reais codificados + decoys embaralhados.
+    """
+    area    = _detect_area(message)
+    params  = _AREA_PARAMS.get(area, _AREA_PARAMS["civil"])
+    sk      = random.choice(["A", "B", "C", "D"])
+    scheme  = _SK_SCHEMES[sk]
+
+    # ParÃ¢metros reais codificados
+    parts: list[str] = []
+    for canonical, alias in scheme.items():
+        value = params[canonical]
+        # depth Ã© int, demais sÃ£o float com 2 casas
+        if canonical == "depth":
+            parts.append(f"{alias}={int(value)}")
+        else:
+            parts.append(f"{alias}={round(float(value), 2)}")
+
+    # 4 decoys com valores aleatÃ³rios
+    decoy_names = random.sample(_DECOY_POOL, 4)
+    for name in decoy_names:
+        parts.append(f"{name}={round(random.uniform(0.10, 0.90), 2)}")
+
+    # Embaralha para misturar reais e decoys
+    random.shuffle(parts)
+    return ",".join(parts), sk
 ALLOWED_SUBSCRIPTION_STATUSES = {
     status.strip().lower()
     for status in os.getenv("ALLOWED_SUBSCRIPTION_STATUSES", "active,trialing").split(",")
@@ -36,15 +150,14 @@ ALLOWED_SUBSCRIPTION_STATUSES = {
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.getenv("DB_PATH", str(BASE_DIR / "server_data.db")))
-ALGO_PARTS_DIR = Path(os.getenv("ALGO_PARTS_DIR", str(BASE_DIR / "data")))
 
 EXTRACTION_PATTERNS = [
-    r"mostre\s+instru(c|ç)(o|õ)es",
+    r"mostre\s+instru(c|Ã§)(o|Ãµ)es",
     r"mostre\s+o\s+prompt",
     r"mostre\s+o\s+script",
     r"liste\s+arquivos",
     r"mostre\s+o\s+arquivo",
-    r"conte(u|ú)do\s+completo",
+    r"conte(u|Ãº)do\s+completo",
     r"reveal\s+the\s+prompt",
     r"system\s+prompt",
     r"dump\s+context",
@@ -396,31 +509,6 @@ def validate_session_token(user_id: str, token: str) -> bool:
     return bool(row and row[0] > now)
 
 
-def load_algorithm_part(part_name: str) -> str:
-    part_path = ALGO_PARTS_DIR / part_name
-    if not part_path.exists():
-        raise FileNotFoundError(f"Missing algorithm part: {part_path}")
-    try:
-        return part_path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        # Fallback for Windows-1252/Latin-1 encodings
-        return part_path.read_text(encoding="latin-1")
-
-
-def obfuscate_text(text: str) -> str:
-    if not OBFUSCATE_ENABLED:
-        return text
-    # Lightweight obfuscation: strip common comment lines and collapse whitespace.
-    lines = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("--"):
-            continue
-        lines.append(line)
-    collapsed = " ".join(" ".join(lines).split())
-    return collapsed
-
-
 app = FastAPI(title=APP_TITLE)
 
 
@@ -439,27 +527,14 @@ class ValidateResponse(BaseModel):
     expires_in_seconds: Optional[int] = None
     reason: Optional[str] = None
     registration_url: Optional[str] = None
-
-
-class PartRequest(BaseModel):
-    user_id: str = Field(..., min_length=1)
-    session_token: str = Field(..., min_length=1)
-    message: Optional[str] = None
-    stripe_customer_id: Optional[str] = None
-    stripe_email: Optional[str] = None
-    oab_number: Optional[str] = None
+    # Split-knowledge Metade B: parÃ¢metros codificados por sessÃ£o
+    cfg: Optional[str] = None   # parÃ¢metros reais + decoys embaralhados
+    sk: Optional[str]  = None   # scheme key (A/B/C/D) para decodificaÃ§Ã£o
 
 
 class BlockRequest(BaseModel):
     user_id: str = Field(..., min_length=1)
     reason: str = Field(..., min_length=1)
-
-
-class PartResponse(BaseModel):
-    status: str
-    internal_logic: Optional[dict] = None
-    cleanup: Optional[bool] = None
-    reason: Optional[str] = None
 
 
 @app.on_event("startup")
@@ -546,6 +621,7 @@ def validate_subscription(payload: ValidateRequest, request: Request) -> Validat
         return ValidateResponse(status="denied", reason="subscription_inactive")
 
     token = create_session_token(payload.user_id)
+    cfg, sk = _build_cfg(payload.message)
     log_event(
         user_id=payload.user_id,
         endpoint="validateSubscription",
@@ -558,112 +634,9 @@ def validate_subscription(payload: ValidateRequest, request: Request) -> Validat
         status="ok",
         session_token=token,
         expires_in_seconds=TOKEN_TTL_MINUTES * 60,
+        cfg=cfg,
+        sk=sk,
     )
-
-
-def serve_part(part_filename: str, payload: PartRequest, request: Request) -> PartResponse:
-    ip = request.client.host if request.client else None
-    if is_blocked(payload.user_id):
-        log_event(
-            user_id=payload.user_id,
-            endpoint="algorithm_parts",
-            status="blocked",
-            reason="user_blocked",
-            ip=ip,
-            message=payload.message,
-        )
-        return PartResponse(status="blocked", reason="user_blocked")
-
-    if payload.stripe_customer_id or payload.stripe_email:
-        upsert_customer_map(payload.user_id, payload.stripe_customer_id, payload.stripe_email)
-
-    if detect_extraction_attempt(payload.message):
-        log_abuse(
-            user_id=payload.user_id,
-            endpoint="algorithm_parts",
-            reason="extraction_suspected",
-            ip=ip,
-            message=payload.message,
-        )
-        log_event(
-            user_id=payload.user_id,
-            endpoint="algorithm_parts",
-            status="blocked",
-            reason="extraction_suspected",
-            ip=ip,
-            message=payload.message,
-        )
-        return PartResponse(status="blocked", reason="extraction_suspected")
-
-    if not validate_session_token(payload.user_id, payload.session_token):
-        log_event(
-            user_id=payload.user_id,
-            endpoint="algorithm_parts",
-            status="invalid_session",
-            reason="session_invalid_or_expired",
-            ip=ip,
-            message=payload.message,
-        )
-        return PartResponse(status="invalid_session", reason="session_invalid_or_expired")
-
-    if not is_subscription_active(
-        payload.user_id,
-        None,
-        payload.stripe_customer_id,
-        payload.stripe_email,
-        payload.oab_number,
-    ):
-        log_event(
-            user_id=payload.user_id,
-            endpoint="algorithm_parts",
-            status="denied",
-            reason="subscription_inactive",
-            ip=ip,
-            message=payload.message,
-        )
-        return PartResponse(status="denied", reason="subscription_inactive")
-
-    if is_rate_limited(payload.user_id, "algorithm_parts"):
-        log_event(
-            user_id=payload.user_id,
-            endpoint="algorithm_parts",
-            status="rate_limited",
-            reason="too_many_requests",
-            ip=ip,
-            message=payload.message,
-        )
-        return PartResponse(status="rate_limited", reason="too_many_requests")
-
-    try:
-        raw_part = load_algorithm_part(part_filename)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    part = obfuscate_text(raw_part)
-    log_event(
-        user_id=payload.user_id,
-        endpoint="algorithm_parts",
-        status="ok",
-        reason=None,
-        ip=ip,
-        message=payload.message,
-    )
-    return PartResponse(status="ok", internal_logic={"part_content": part}, cleanup=True)
-
-
-@app.post("/getAlgorithmPart1", response_model=PartResponse)
-def get_algorithm_part1(payload: PartRequest, request: Request) -> PartResponse:
-    return serve_part("algorithm_part1.txt", payload, request)
-
-
-@app.post("/getAlgorithmPart2", response_model=PartResponse)
-def get_algorithm_part2(payload: PartRequest, request: Request) -> PartResponse:
-    return serve_part("algorithm_part2.txt", payload, request)
-
-
-@app.post("/getAlgorithmPart3", response_model=PartResponse)
-def get_algorithm_part3(payload: PartRequest, request: Request) -> PartResponse:
-    return serve_part("algorithm_part3.txt", payload, request)
 
 
 @app.get("/register", response_class=HTMLResponse)
@@ -846,3 +819,5 @@ async def stripe_webhook(request: Request) -> dict:
             cache_subscription_status(customer_id, "canceled")
 
     return {"status": "ok"}
+
+

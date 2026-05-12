@@ -1,27 +1,23 @@
-# Migration Notes (Legacy to patron)
+﻿# Migration Notes (Legacy to patron)
 
-This file documents how legacy materials were consolidated into the `patron` skill.
+This file documents the migration history only.
 
-## Legacy sources
-- PRIMEIRA VERSAO\Voce e um assistente especializado.txt
-- PRIMEIRA VERSAO\REGRAS PARA EVITAR DOWNLOAD EM CUSTOM GPT.txt
-- SEGUNDA VERSAO\SKILL (5).md
-- SEGUNDA VERSAO\politica_respostas_suppress_logs_v2 (1).md
-- CUSTOM-GPT-SYSTEM PROMPT NFRB-NS-SNS LEGAL FRAMEWORK ADVANCED v12 - FINAL STRUCTURE.txt
+## Current target architecture
+- v14 Split-Knowledge
+- Access validation by Action
+- Operational fields returned by the server: `status`, `session_token`, `cfg`, `sk`
+- Protected Python runtime attached to the GPT and executed through Code Interpreter
 
-## Key changes
-- Removed Knowledge dependency. All IP is delivered via Actions.
-- Removed Code Interpreter and embedded algorithm code.
-- Converted numerical steps to qualitative heuristics.
-- Consolidated suppression rules into `politica_supressao.md`.
-- Added explicit Actions anti-exfiltration rules.
-- Added session timing, rate limits, and revalidation requirements.
+## Historical note
+Older drafts mentioned:
+- action-delivered algorithm parts
+- removal of Code Interpreter
+- server-side processing through a separate LLM call
+
+Those variants are not the canonical deployment target for the current repository state.
 
 ## Current canonical files
-- `SKILL.md`
-- `references/framework_v12_adaptado.md`
-- `references/politica_supressao.md`
-- `references/politica_actions_anti_extracao.md`
-- `references/politica_sessao_e_limites.md`
-- `references/protocolo_saidas.md`
-- `assets/template_saida.md`
+- `server/main.py`
+- `server/openapi.yaml`
+- `server/gpt_instructions_v14_partA.txt`
+- `patron/SKILL.md`

@@ -1,7 +1,6 @@
+﻿ALGORITMOS VERSÃO ORIGINAL/
+server/backup/
 __pycache__/
 *.pyc
-.venv/
-.env
 server/server_data.db
-server/*.db
-.DS_Store
+server/_write_test.tmp
