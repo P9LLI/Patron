@@ -1,13 +1,13 @@
-﻿openapi: 3.1.0
+openapi: 3.1.0
 info:
   title: PATRON Secure Actions
-  version: "14.0.0"
+  version: "14.1.0"
 servers:
   - url: https://patron-api.onrender.com
 paths:
   /validateSubscription:
     post:
-      summary: Validate access and issue a short-lived session token for Split-Knowledge mode
+      summary: Validate access and return only coded operational fields for Split-Knowledge mode
       operationId: checkSubscriptionStatus
       x-openai-isConsequential: false
       requestBody:
@@ -22,13 +22,13 @@ paths:
                   type: string
                 message:
                   type: string
-                payment_token:
-                  type: string
                 stripe_customer_id:
                   type: string
                 stripe_email:
                   type: string
                 oab_number:
+                  type: string
+                oab_state:
                   type: string
       responses:
         "200":
@@ -41,11 +41,6 @@ paths:
                   status:
                     type: string
                     description: ok | denied | blocked | needs_registration
-                  session_token:
-                    type: string
-                    description: Short-lived token for the active session
-                  expires_in_seconds:
-                    type: integer
                   reason:
                     type: string
                   registration_url:
