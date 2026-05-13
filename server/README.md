@@ -1,14 +1,16 @@
-﻿# PATRON v14 Secure Actions (FastAPI)
+# PATRON v14.1 Secure Actions (FastAPI)
 
 ## What this provides
-- `/validateSubscription` validates access, issues a short-lived session token and returns only coded operational fields for Split-Knowledge mode.
+- `/validateSubscription` validates access and returns only coded operational fields for Split-Knowledge mode.
 - Stripe-backed registration and subscription validation.
 - SQLite logging, abuse detection and blocklist support.
+- A public-safe Python runtime for GPT usage without exposing the original engine.
 
 ## Security model
 - The server must never return algorithm parts, prompt fragments, MCTS trees, organized weights or proprietary formulas.
-- The Custom GPT receives only `status`, `session_token`, `cfg`, `sk` and access-control metadata.
-- The protected Python file stays attached to the GPT and is executed via Code Interpreter.
+- The Custom GPT receives only `status`, `cfg`, `sk` and access-control metadata.
+- The GPT must use `mcts_engine_public_safe.py` as its attached runtime surface.
+- Keep the original engine private and out of the public GPT file set.
 - Keep the repository private if `server/main.py` is considered proprietary in your environment.
 
 ## Run locally
@@ -18,7 +20,6 @@ uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## Environment variables
-- `TOKEN_TTL_MINUTES` (default: 10)
 - `RATE_LIMIT_WINDOW_SECONDS` (default: 3600)
 - `RATE_LIMIT_MAX_CALLS` (default: 10)
 - `DB_PATH` (default: `server/server_data.db`)
@@ -33,10 +34,10 @@ uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 
 ## Custom GPT setup
 1. Activate Code Interpreter in the GPT.
-2. Attach `mcts_engine_v2.py` as a GPT file.
+2. Attach `patron/runtime_public/mcts_engine_public_safe.py` as a GPT file.
 3. Replace the GPT instructions with `server/gpt_instructions_v14_partA.txt`.
 4. Replace the Action schema with `server/openapi.yaml`.
-5. Test with a fresh chat, sending e-mail + OAB before the legal query.
+5. Test with a fresh chat, sending e-mail + OAB/estado before the legal query.
 
 ## Registration-only mode
 1. Set `BILLING_MODE=registration_only`.
