@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import os
-import random
 import re
 import sqlite3
 import time
 import uuid
+from urllib.parse import quote_plus
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -35,39 +35,27 @@ ALLOWED_SUBSCRIPTION_STATUSES = {
 # ---------------------------------------------------------------------------
 # SPLIT-KNOWLEDGE - METADE B (servidor)
 # Os esquemas de roteamento e perfis de area vivem APENAS no servidor.
-# O GPT recebe apenas cfg codificado + sk; sem a Metade A, cfg nao e util.
+# O GPT recebe apenas um modo curto e opaco; sem parametros visiveis ou calibracao detalhada.
 # ---------------------------------------------------------------------------
 
-_SK_SCHEMES: dict[str, dict[str, str]] = {
-    "A": {"alpha": "a1", "beta": "a2", "gamma": "a3", "delta": "a4", "C": "m1", "depth": "m2", "we": "r1", "wm": "r2", "ld": "r3", "lw": "r4", "wt": "r5"},
-    "B": {"alpha": "x1", "beta": "x2", "gamma": "x3", "delta": "x4", "C": "y1", "depth": "y2", "we": "s1", "wm": "s2", "ld": "s3", "lw": "s4", "wt": "s5"},
-    "C": {"alpha": "p", "beta": "q", "gamma": "r", "delta": "s", "C": "t", "depth": "u", "we": "f1", "wm": "f2", "ld": "f3", "lw": "f4", "wt": "f5"},
-    "D": {"alpha": "n1", "beta": "n2", "gamma": "n3", "delta": "n4", "C": "k1", "depth": "k2", "we": "d1", "wm": "d2", "ld": "d3", "lw": "d4", "wt": "d5"},
-}
-
-_DECOY_POOL: list[str] = [
-    "z9", "k3", "v7", "j2", "b5", "w4", "q8", "h6",
-    "e1", "g3", "c7", "t2", "o5", "l8", "i4", "y9",
-]
-
-_AREA_PARAMS: dict[str, dict[str, float]] = {
-    "civil": {"alpha": 0.35, "beta": 0.25, "gamma": 0.25, "delta": 0.15, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "trabalhista": {"alpha": 0.25, "beta": 0.20, "gamma": 0.40, "delta": 0.15, "C": 0.30, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "tributario": {"alpha": 0.25, "beta": 0.25, "gamma": 0.20, "delta": 0.30, "C": 0.50, "depth": 10, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "constitucional": {"alpha": 0.20, "beta": 0.15, "gamma": 0.25, "delta": 0.40, "C": 0.50, "depth": 10, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "penal": {"alpha": 0.40, "beta": 0.25, "gamma": 0.20, "delta": 0.15, "C": 0.50, "depth": 5, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "administrativo": {"alpha": 0.30, "beta": 0.25, "gamma": 0.25, "delta": 0.20, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "consumidor": {"alpha": 0.30, "beta": 0.30, "gamma": 0.25, "delta": 0.15, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.30, "lw": 0.20, "wt": 0.30},
-    "societario": {"alpha": 0.30, "beta": 0.25, "gamma": 0.25, "delta": 0.20, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "bancario_financeiro": {"alpha": 0.30, "beta": 0.25, "gamma": 0.25, "delta": 0.20, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.30, "lw": 0.20, "wt": 0.30},
-    "imobiliario_patrimonial": {"alpha": 0.35, "beta": 0.25, "gamma": 0.20, "delta": 0.20, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "sucessorio": {"alpha": 0.30, "beta": 0.25, "gamma": 0.20, "delta": 0.25, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.30, "lw": 0.20, "wt": 0.30},
-    "medico": {"alpha": 0.35, "beta": 0.30, "gamma": 0.20, "delta": 0.15, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.30, "lw": 0.20, "wt": 0.30},
-    "regulatorio": {"alpha": 0.25, "beta": 0.25, "gamma": 0.20, "delta": 0.30, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "penal_economico": {"alpha": 0.35, "beta": 0.25, "gamma": 0.20, "delta": 0.20, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "ambiental": {"alpha": 0.25, "beta": 0.25, "gamma": 0.20, "delta": 0.30, "C": 0.50, "depth": 10, "we": 0.40, "wm": 0.40, "ld": 0.30, "lw": 0.20, "wt": 0.30},
-    "empresarial": {"alpha": 0.30, "beta": 0.30, "gamma": 0.20, "delta": 0.20, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
-    "eleitoral": {"alpha": 0.25, "beta": 0.20, "gamma": 0.25, "delta": 0.30, "C": 0.50, "depth": 7, "we": 0.40, "wm": 0.40, "ld": 0.25, "lw": 0.20, "wt": 0.30},
+_MODE_BY_AREA: dict[str, str] = {
+    "civil": "p1",
+    "trabalhista": "p2",
+    "tributario": "p3",
+    "constitucional": "p4",
+    "penal": "r1",
+    "administrativo": "r2",
+    "consumidor": "r3",
+    "societario": "r4",
+    "bancario_financeiro": "r5",
+    "imobiliario_patrimonial": "r6",
+    "sucessorio": "r7",
+    "medico": "r8",
+    "regulatorio": "r9",
+    "penal_economico": "s1",
+    "ambiental": "s2",
+    "empresarial": "s3",
+    "eleitoral": "s4",
 }
 
 _AREA_KEYWORDS: dict[str, list[str]] = {
@@ -122,8 +110,7 @@ class ValidateResponse(BaseModel):
     status: str
     reason: Optional[str] = None
     registration_url: Optional[str] = None
-    cfg: Optional[str] = None
-    sk: Optional[str] = None
+    mode: Optional[str] = None
 
 
 class BlockRequest(BaseModel):
@@ -346,25 +333,10 @@ def _detect_area(message: Optional[str]) -> str:
     return "civil"
 
 
-def _build_cfg(message: Optional[str]) -> tuple[str, str]:
+def _build_mode(message: Optional[str]) -> str:
     area = _detect_area(message)
-    params = _AREA_PARAMS.get(area, _AREA_PARAMS["civil"])
-    sk = random.choice(["A", "B", "C", "D"])
-    scheme = _SK_SCHEMES[sk]
+    return _MODE_BY_AREA.get(area, "p1")
 
-    parts: list[str] = []
-    for canonical, alias in scheme.items():
-        value = params[canonical]
-        if canonical == "depth":
-            parts.append(f"{alias}={int(value)}")
-        else:
-            parts.append(f"{alias}={round(float(value), 2)}")
-
-    for name in random.sample(_DECOY_POOL, 4):
-        parts.append(f"{name}={round(random.uniform(0.10, 0.90), 2)}")
-
-    random.shuffle(parts)
-    return ",".join(parts), sk
 
 
 def find_customer_id(stripe_customer_id: Optional[str], stripe_email: Optional[str]) -> Optional[str]:
@@ -482,15 +454,15 @@ def validate_subscription(payload: ValidateRequest, request: Request) -> Validat
 
     if not is_subscription_active(payload.user_id, payload.stripe_customer_id, payload.stripe_email, payload.oab_number, normalized_state):
         if BILLING_MODE == "registration_only":
-            reg_url = f"{PUBLIC_BASE_URL}/register?user_id={payload.user_id}&email={payload.stripe_email or payload.user_id or ''}"
+            reg_url = f"{PUBLIC_BASE_URL}/register?user_id={quote_plus(payload.user_id)}&email={quote_plus(payload.stripe_email or payload.user_id or '')}"
             log_event(user_id=payload.user_id, endpoint="validateSubscription", status="needs_registration", reason="not_registered", ip=ip, message=payload.message)
             return ValidateResponse(status="needs_registration", reason="not_registered", registration_url=reg_url)
         log_event(user_id=payload.user_id, endpoint="validateSubscription", status="denied", reason="subscription_inactive", ip=ip, message=payload.message)
         return ValidateResponse(status="denied", reason="subscription_inactive")
 
-    cfg, sk = _build_cfg(payload.message)
+    mode = _build_mode(payload.message)
     log_event(user_id=payload.user_id, endpoint="validateSubscription", status="ok", reason=None, ip=ip, message=payload.message)
-    return ValidateResponse(status="ok", cfg=cfg, sk=sk)
+    return ValidateResponse(status="ok", mode=mode)
 
 
 @app.get("/register", response_class=HTMLResponse)

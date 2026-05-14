@@ -1,13 +1,13 @@
 openapi: 3.1.0
 info:
   title: PATRON Secure Actions
-  version: "14.1.0"
+  version: "14.2.0"
 servers:
   - url: https://patron-api.onrender.com
 paths:
   /validateSubscription:
     post:
-      summary: Validate access and return only coded operational fields for Split-Knowledge mode
+      summary: Validate access and return only minimal operational mode
       operationId: checkSubscriptionStatus
       x-openai-isConsequential: false
       requestBody:
@@ -22,8 +22,6 @@ paths:
                   type: string
                 message:
                   type: string
-                stripe_customer_id:
-                  type: string
                 stripe_email:
                   type: string
                 oab_number:
@@ -32,7 +30,7 @@ paths:
                   type: string
       responses:
         "200":
-          description: Validation result for the current session
+          description: Minimal validation result
           content:
             application/json:
               schema:
@@ -40,17 +38,15 @@ paths:
                 properties:
                   status:
                     type: string
-                    description: ok | denied | blocked | needs_registration
-                  reason:
+                    description: ok | needs_registration | denied | blocked
+                  mode:
                     type: string
+                    description: Short opaque runtime mode code, returned only when status is ok
                   registration_url:
                     type: string
-                  cfg:
+                    description: Returned only when status is needs_registration
+                  reason:
                     type: string
-                    description: Encoded operational configuration for the current session
-                  sk:
-                    type: string
-                    description: Split-Knowledge scheme key for the current session
   /blockUser:
     post:
       summary: Block a user (admin use)
