@@ -1,0 +1,28 @@
+{
+  "fixture_type": "structural_regression",
+  "notice": "Os identificadores abaixo sao sementes sinteticas. Eles verificam fluxo, deduplicacao e saturacao, mas nao substituem os numeros oficiais do caso Antonio Rigolin.",
+  "request": {
+    "query": "Mapear o modo de julgar do relator Antonio Rigolin em indenizacao por inscricao indevida.",
+    "work_type": "relatorio",
+    "tribunals": ["TJSP"],
+    "rapporteurs": ["Antonio Rigolin"],
+    "period": "2018 a 2026",
+    "facts": "Inscricao indevida em cadastro de protecao ao credito.",
+    "legal_question": "Como o relator decide casos comparaveis e trata anotacoes preexistentes?",
+    "requested_metrics": ["tendencia", "quantum", "estabilidade"],
+    "known_cases": [
+      {"process_number": "SEED-001", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-002", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-003", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-004", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-005", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-006", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-007", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-008", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-009", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-010", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-011", "source_level": "secondary", "include_in_statistics": false},
+      {"process_number": "SEED-012", "source_level": "secondary", "include_in_statistics": false}
+    ]
+  }
+}
