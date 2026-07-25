@@ -172,30 +172,3 @@ paths:
                   runtime:
                     type: object
                     description: Present only when status is ok. Contains v142 output and PJ1 research controls.
-  /blockUser:
-    post:
-      summary: Block a user (admin use)
-      operationId: adminBlockUser
-      x-openai-isConsequential: false
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_id, reason]
-              properties:
-                user_id:
-                  type: string
-                reason:
-                  type: string
-      responses:
-        "200":
-          description: Blocked
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
