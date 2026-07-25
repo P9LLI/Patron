@@ -1,0 +1,201 @@
+openapi: 3.1.0
+info:
+  title: PATRON Secure Actions with PJ1
+  version: "14.2.1-pj1"
+servers:
+  - url: https://patron-api.onrender.com
+paths:
+  /validateSubscription:
+    post:
+      summary: Validate access and return only minimal operational mode
+      operationId: checkSubscriptionStatus
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+                message:
+                  type: string
+                stripe_customer_id:
+                  type: string
+                stripe_email:
+                  type: string
+                oab_number:
+                  type: string
+                oab_state:
+                  type: string
+      responses:
+        "200":
+          description: Minimal validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: ok | needs_registration | denied | blocked
+                  mode:
+                    type: string
+                    description: Short opaque runtime mode code, returned only when status is ok
+                  registration_url:
+                    type: string
+                  reason:
+                    type: string
+  /v14_2/pj1/research-plan:
+    post:
+      summary: Build an auditable legal-research plan after an independent access check
+      operationId: buildAuditableResearchPlan
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [user_id, oab_number, oab_state, v142]
+              properties:
+                user_id:
+                  type: string
+                  description: Same stable identifier used during the access flow.
+                message:
+                  type: string
+                  description: Current user request, used only for access classification and abuse checks.
+                stripe_customer_id:
+                  type: string
+                stripe_email:
+                  type: string
+                oab_number:
+                  type: string
+                oab_state:
+                  type: string
+                v142:
+                  type: object
+                  additionalProperties: false
+                  required: [q, tt, tr]
+                  description: Baseline v14.2 routing input. The server supplies the operational mode.
+                  properties:
+                    q:
+                      type: string
+                      description: Legal request or research question.
+                    tt:
+                      type: string
+                      enum: [jurisprudencia, peticao, parecer, relatorio]
+                    tr:
+                      oneOf:
+                        - type: string
+                        - type: array
+                          items:
+                            type: string
+                    pd:
+                      type: string
+                    cx:
+                      type: string
+                    of:
+                      type: string
+                    m:
+                      type: string
+                      description: Ignored by this route. The server derives the current opaque mode.
+                pj1:
+                  type: object
+                  additionalProperties: false
+                  description: Optional PJ1 research context. Omit fields not supplied by the user.
+                  properties:
+                    query:
+                      type: string
+                    work_type:
+                      type: string
+                      enum: [jurisprudencia, peticao, parecer, relatorio, memoriais, minuta]
+                    research_mode:
+                      type: string
+                      enum: [application, mapping, audit, hybrid]
+                    tribunals:
+                      type: array
+                      items:
+                        type: string
+                    rapporteurs:
+                      type: array
+                      items:
+                        type: string
+                    period:
+                      type: string
+                    facts:
+                      type: string
+                    legal_question:
+                      type: string
+                    thesis:
+                      type: string
+                    process_position:
+                      type: string
+                    output_format:
+                      type: string
+                    requested_metrics:
+                      type: array
+                      items:
+                        type: string
+                    source_limits:
+                      type: string
+                    executed_families:
+                      type: array
+                      items:
+                        type: string
+                    known_cases:
+                      type: array
+                      description: Candidate cases or a corpus to be audited. Each item must preserve source provenance and the independent-litigation identifier when known.
+                      items:
+                        type: object
+                        additionalProperties: true
+      responses:
+        "200":
+          description: Access outcome or, when status is ok, baseline routing plus PJ1 research controls.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: ok | needs_facts | needs_registration | denied | blocked | invalid_request
+                  mode:
+                    type: string
+                  registration_url:
+                    type: string
+                  reason:
+                    type: string
+                  runtime:
+                    type: object
+                    description: Present only when status is ok. Contains v142 output and PJ1 research controls.
+  /blockUser:
+    post:
+      summary: Block a user (admin use)
+      operationId: adminBlockUser
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, reason]
+              properties:
+                user_id:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Blocked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
