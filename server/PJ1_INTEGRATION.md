@@ -67,3 +67,8 @@ A rota PJ1 constrói plano, controla corpus e audita dados fornecidos. Ela não
 faz coleta autônoma de julgados nem inventa citações. A busca deve usar fontes
 oficiais e o Web Search do GPT; os achados podem voltar no campo `known_cases`
 para deduplicação, métricas e gates.
+
+
+## Extens?o determin?stica v1
+
+A entrada opcional `server.main_pj1_validator:app` importa toda a aplica??o PJ1 anterior e acrescenta `/v1/pj1/validate`. A rota usa Bearer token de servi?o e tabela SQLite separada; consulte `server/PJ1_VALIDATOR_DEPLOYMENT.md`.
