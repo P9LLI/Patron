@@ -1,0 +1,2584 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PATRON Secure Actions with PJ1 Deterministic Validation",
+    "version": "14.2.2-pj1-validator"
+  },
+  "servers": [
+    {
+      "url": "https://patron-api.onrender.com"
+    }
+  ],
+  "paths": {
+    "/validateSubscription": {
+      "post": {
+        "summary": "Validate access and return only minimal operational mode",
+        "operationId": "checkSubscriptionStatus",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "user_id"
+                ],
+                "properties": {
+                  "user_id": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "stripe_customer_id": {
+                    "type": "string"
+                  },
+                  "stripe_email": {
+                    "type": "string"
+                  },
+                  "oab_number": {
+                    "type": "string"
+                  },
+                  "oab_state": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Minimal validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "ok | needs_registration | denied | blocked"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "description": "Short opaque runtime mode code, returned only when status is ok"
+                    },
+                    "registration_url": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v14_2/pj1/research-plan": {
+      "post": {
+        "summary": "Build an auditable legal-research plan after an independent access check",
+        "operationId": "buildAuditableResearchPlan",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "user_id",
+                  "oab_number",
+                  "oab_state",
+                  "v142"
+                ],
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "description": "Same stable identifier used during the access flow."
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Current user request, used only for access classification and abuse checks."
+                  },
+                  "stripe_customer_id": {
+                    "type": "string"
+                  },
+                  "stripe_email": {
+                    "type": "string"
+                  },
+                  "oab_number": {
+                    "type": "string"
+                  },
+                  "oab_state": {
+                    "type": "string"
+                  },
+                  "v142": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "q",
+                      "tt",
+                      "tr"
+                    ],
+                    "description": "Baseline v14.2 routing input. The server supplies the operational mode.",
+                    "properties": {
+                      "q": {
+                        "type": "string",
+                        "description": "Legal request or research question."
+                      },
+                      "tt": {
+                        "type": "string",
+                        "enum": [
+                          "jurisprudencia",
+                          "peticao",
+                          "parecer",
+                          "relatorio"
+                        ]
+                      },
+                      "tr": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        ]
+                      },
+                      "pd": {
+                        "type": "string"
+                      },
+                      "cx": {
+                        "type": "string"
+                      },
+                      "of": {
+                        "type": "string"
+                      },
+                      "m": {
+                        "type": "string",
+                        "description": "Ignored by this route. The server derives the current opaque mode."
+                      }
+                    }
+                  },
+                  "pj1": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Optional PJ1 research context. Omit fields not supplied by the user.",
+                    "properties": {
+                      "query": {
+                        "type": "string"
+                      },
+                      "work_type": {
+                        "type": "string",
+                        "enum": [
+                          "jurisprudencia",
+                          "peticao",
+                          "parecer",
+                          "relatorio",
+                          "memoriais",
+                          "minuta"
+                        ]
+                      },
+                      "research_mode": {
+                        "type": "string",
+                        "enum": [
+                          "application",
+                          "mapping",
+                          "audit",
+                          "hybrid"
+                        ]
+                      },
+                      "tribunals": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "rapporteurs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "period": {
+                        "type": "string"
+                      },
+                      "facts": {
+                        "type": "string"
+                      },
+                      "legal_question": {
+                        "type": "string"
+                      },
+                      "thesis": {
+                        "type": "string"
+                      },
+                      "process_position": {
+                        "type": "string"
+                      },
+                      "output_format": {
+                        "type": "string"
+                      },
+                      "requested_metrics": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "source_limits": {
+                        "type": "string"
+                      },
+                      "executed_families": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "known_cases": {
+                        "type": "array",
+                        "description": "Candidate cases or a corpus to be audited. Each item must preserve source provenance and the independent-litigation identifier when known.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access outcome or, when status is ok, baseline routing plus PJ1 research controls.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "ok | needs_facts | needs_registration | denied | blocked | invalid_request"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "registration_url": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "runtime": {
+                      "type": "object",
+                      "description": "Present only when status is ok. Contains v142 output and PJ1 research controls."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pj1/validate": {
+      "post": {
+        "operationId": "validatePJ1Response",
+        "summary": "Valida evid?ncia e resposta jur?dica pelo PJ1",
+        "security": [
+          {
+            "serviceBearer": []
+          }
+        ],
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decis?o determin?stica",
+            "headers": {
+              "X-PJ1-Idempotent-Replay": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token inv?lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de idempot?ncia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request inv?lido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Resposta interna inv?lida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Token do servi?o n?o configurado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "serviceBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque-service-token"
+      }
+    },
+    "schemas": {
+      "Identifier": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+      },
+      "RuleId": {
+        "type": "string",
+        "pattern": "^PJ1-[A-Z]+-[0-9]{3}$"
+      },
+      "DigestSha256": {
+        "type": "string",
+        "pattern": "^[A-Fa-f0-9]{64}$"
+      },
+      "NonEmptyText": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20000
+      },
+      "ShortText": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "LegalIdentifier": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      },
+      "ScalarClaimValue": {
+        "type": [
+          "string",
+          "number",
+          "boolean",
+          "null"
+        ]
+      },
+      "ResearchMode": {
+        "type": "string",
+        "enum": [
+          "application",
+          "mapping",
+          "audit",
+          "hybrid"
+        ]
+      },
+      "SourceLevel": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "AccessStatus": {
+        "type": "string",
+        "enum": [
+          "verified",
+          "not_found",
+          "restricted",
+          "generic_page",
+          "wrong_artifact",
+          "unavailable",
+          "unknown"
+        ]
+      },
+      "IdentityStatus": {
+        "type": "string",
+        "enum": [
+          "match",
+          "derived_reference",
+          "ambiguous",
+          "mismatch",
+          "unknown"
+        ]
+      },
+      "ClaimStatus": {
+        "type": "string",
+        "enum": [
+          "confirmed",
+          "partial",
+          "conflicting",
+          "unknown"
+        ]
+      },
+      "OutputDisposition": {
+        "type": "string",
+        "enum": [
+          "ALLOW_AB",
+          "ALLOW_USER_FACT",
+          "ALLOW_C_LITERAL",
+          "CANDIDATE_ONLY",
+          "PENDING_ONLY",
+          "SUPPRESS"
+        ]
+      },
+      "EmpiricalCeiling": {
+        "type": "string",
+        "enum": [
+          "none",
+          "case_description",
+          "qualitative_signal",
+          "descriptive_mapping"
+        ]
+      },
+      "RecommendationGate": {
+        "type": "string",
+        "enum": [
+          "allowed",
+          "blocked"
+        ]
+      },
+      "ValidationStatus": {
+        "type": "string",
+        "enum": [
+          "APPROVED",
+          "APPROVED_WITH_LIMITS",
+          "BLOCKED",
+          "REVIEW_REQUIRED"
+        ]
+      },
+      "GateStatus": {
+        "type": "string",
+        "enum": [
+          "pass",
+          "fail",
+          "pending",
+          "review_required"
+        ]
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "P1",
+          "P2",
+          "P3",
+          "P4"
+        ]
+      },
+      "SemanticClass": {
+        "type": "string",
+        "enum": [
+          "individual_case_description",
+          "official_rule",
+          "bounded_recurrence",
+          "profile_behavior",
+          "metric",
+          "temporal_trend",
+          "quantum",
+          "prediction",
+          "conditional_legal_application",
+          "documentary_next_step"
+        ]
+      },
+      "ClaimField": {
+        "type": "string",
+        "enum": [
+          "identity",
+          "process_number",
+          "decision_identifier",
+          "court",
+          "court_panel",
+          "rapporteur",
+          "judgment_date",
+          "publication_date",
+          "facts",
+          "legal_question",
+          "outcome",
+          "holding",
+          "ratio",
+          "autonomous_ground",
+          "obiter",
+          "official_rule",
+          "distinguishing",
+          "quantum_origin",
+          "quantum_final",
+          "citation",
+          "hyperlink",
+          "other"
+        ]
+      },
+      "DocumentKindObserved": {
+        "type": "string",
+        "enum": [
+          "full_text",
+          "case_page",
+          "metadata",
+          "official_reproduction",
+          "secondary",
+          "generic_or_unknown"
+        ]
+      },
+      "EvidenceOrigin": {
+        "type": "string",
+        "enum": [
+          "custom_gpt",
+          "user_supplied",
+          "server_fetcher",
+          "human_reviewer",
+          "imported_fixture"
+        ]
+      },
+      "Surface": {
+        "type": "string",
+        "enum": [
+          "body",
+          "heading",
+          "table",
+          "note",
+          "link",
+          "citation",
+          "recommendation",
+          "conclusion"
+        ]
+      },
+      "Period": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "ResearchScope": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "legal_question"
+        ],
+        "properties": {
+          "legal_question": {
+            "$ref": "#/components/schemas/NonEmptyText"
+          },
+          "practical_objective": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "tribunals": {
+            "type": "array",
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          },
+          "court_panels": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          },
+          "rapporteurs": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          },
+          "case_classes": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          },
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "fact_profile": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "process_position": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "requested_outputs": {
+            "type": "array",
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/SemanticClass"
+            }
+          }
+        }
+      },
+      "RetrievalObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "origin",
+          "observed_at"
+        ],
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/EvidenceOrigin"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "http_status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "observed_access": {
+            "type": "string",
+            "enum": [
+              "opened",
+              "not_found",
+              "restricted",
+              "generic_page",
+              "wrong_artifact",
+              "unavailable",
+              "unknown"
+            ]
+          },
+          "content_hash": {
+            "$ref": "#/components/schemas/DigestSha256"
+          },
+          "content_reference": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "$comment": "Todos os campos sÃ£o observaÃ§Ãµes do cliente e nÃ£o equivalem a access_status=verified calculado pelo servidor."
+      },
+      "EvidenceFragment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fragment_id",
+          "locator",
+          "text"
+        ],
+        "properties": {
+          "fragment_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ShortText"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000
+          },
+          "claimed_fields": {
+            "type": "array",
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ClaimField"
+            }
+          }
+        }
+      },
+      "DocumentObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "document_id",
+          "target_identifier",
+          "canonical_url",
+          "observed_kind",
+          "retrieval"
+        ],
+        "properties": {
+          "document_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "target_identifier": {
+            "$ref": "#/components/schemas/LegalIdentifier"
+          },
+          "canonical_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "observed_kind": {
+            "$ref": "#/components/schemas/DocumentKindObserved"
+          },
+          "observed_primary_process_number": {
+            "$ref": "#/components/schemas/LegalIdentifier"
+          },
+          "observed_decision_identifier": {
+            "$ref": "#/components/schemas/LegalIdentifier"
+          },
+          "observed_cited_process_numbers": {
+            "type": "array",
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/LegalIdentifier"
+            }
+          },
+          "retrieval": {
+            "$ref": "#/components/schemas/RetrievalObservation"
+          },
+          "fragments": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/EvidenceFragment"
+            }
+          },
+          "client_notes": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "$comment": "O cliente nÃ£o pode enviar source_level_verified, access_status, identity_status ou elegibilidade como fatos finais.",
+        "x-pj1-rule-ids": [
+          "PJ1-AB-001",
+          "PJ1-ID-002",
+          "PJ1-C-003",
+          "PJ1-D-004",
+          "PJ1-E-005"
+        ]
+      },
+      "ClaimSubmission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "field",
+          "value",
+          "source_document_id",
+          "source_locator"
+        ],
+        "properties": {
+          "claim_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "case_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "field": {
+            "$ref": "#/components/schemas/ClaimField"
+          },
+          "value": {
+            "$ref": "#/components/schemas/ScalarClaimValue"
+          },
+          "source_document_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "source_locator": {
+            "$ref": "#/components/schemas/ShortText"
+          },
+          "evidence_excerpt": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "explicitly_asserted": {
+            "type": "boolean"
+          },
+          "premise_claim_ids": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "conflict_group_asserted": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "$comment": "Claim enviado pelo cliente Ã© uma submissÃ£o para validaÃ§Ã£o. claim_status, source_level e output_disposition sÃ£o exclusivamente calculados pelo servidor.",
+        "x-pj1-rule-ids": [
+          "PJ1-FIELD-006",
+          "PJ1-FIELD-007"
+        ]
+      },
+      "CandidateSubmission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "target_identifier",
+          "discovered_by_document_ids",
+          "materiality_asserted"
+        ],
+        "properties": {
+          "candidate_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "target_identifier": {
+            "$ref": "#/components/schemas/LegalIdentifier"
+          },
+          "discovered_by_document_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "materiality_asserted": {
+            "type": "string",
+            "enum": [
+              "material",
+              "not_material",
+              "unknown"
+            ]
+          },
+          "materiality_reason": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "$comment": "A materialidade declarada nÃ£o resolve o candidato. O servidor deve calcular ou exigir revisÃ£o."
+      },
+      "ProposedLitigationGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "litigation_id",
+          "case_ids",
+          "relationship_basis"
+        ],
+        "properties": {
+          "litigation_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "case_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "relationship_basis": {
+            "$ref": "#/components/schemas/NonEmptyText"
+          },
+          "supporting_document_ids": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        },
+        "$comment": "Agrupamento proposto pelo cliente; independÃªncia Ã© recalculada ou revisada pelo servidor.",
+        "x-pj1-rule-ids": [
+          "PJ1-IND-009"
+        ]
+      },
+      "ProposedCluster": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cluster_id",
+          "case_ids",
+          "criteria",
+          "comparability_asserted"
+        ],
+        "properties": {
+          "cluster_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "case_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 250,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/NonEmptyText"
+          },
+          "comparability_asserted": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unknown"
+            ]
+          }
+        },
+        "$comment": "Comparabilidade Ã© uma alegaÃ§Ã£o de entrada e deve virar review_required enquanto nÃ£o houver critÃ©rio normatizado."
+      },
+      "ExclusionSubmission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exclusion_id",
+          "subject_type",
+          "subject_id",
+          "reason_code",
+          "reason"
+        ],
+        "properties": {
+          "exclusion_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "subject_type": {
+            "type": "string",
+            "enum": [
+              "document",
+              "candidate",
+              "case",
+              "litigation",
+              "claim"
+            ]
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "duplicate_supported",
+              "outside_scope",
+              "procedural_only",
+              "incomparable_cluster",
+              "insufficient_source",
+              "identity_unresolved",
+              "claim_unconfirmed",
+              "other"
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/NonEmptyText"
+          },
+          "candidate_resolved_asserted": {
+            "type": "boolean"
+          },
+          "resolution_evidence_document_ids": {
+            "type": "array",
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        },
+        "$comment": "candidate_resolved_asserted nunca Ã© aceito sem regra/evidÃªncia de resoluÃ§Ã£o calculada pelo servidor.",
+        "x-pj1-rule-ids": [
+          "PJ1-CORP-008"
+        ]
+      },
+      "QueryRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "query_id",
+          "family",
+          "direction",
+          "query_text",
+          "executed_at"
+        ],
+        "properties": {
+          "query_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "family": {
+            "$ref": "#/components/schemas/ShortText"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "favorable",
+              "contrary",
+              "neutral"
+            ]
+          },
+          "query_text": {
+            "$ref": "#/components/schemas/NonEmptyText"
+          },
+          "executed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "observed_result_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "observed_new_material_candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      },
+      "SearchReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queries",
+          "coverage_asserted",
+          "saturation_rounds_asserted"
+        ],
+        "properties": {
+          "required_families": {
+            "type": "array",
+            "maxItems": 30,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          },
+          "queries": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/QueryRecord"
+            }
+          },
+          "coverage_asserted": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "limited",
+              "fail",
+              "unknown"
+            ]
+          },
+          "coverage_notes": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "saturation_rounds_asserted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          }
+        },
+        "$comment": "Coverage e saturation sÃ£o alegaÃ§Ãµes. O servidor deve validar os critÃ©rios antes de convertÃª-las em gate pass."
+      },
+      "PropositionSubmission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "proposition_id",
+          "field",
+          "text",
+          "semantic_class",
+          "surface"
+        ],
+        "properties": {
+          "proposition_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "field": {
+            "$ref": "#/components/schemas/ClaimField"
+          },
+          "text": {
+            "$ref": "#/components/schemas/NonEmptyText"
+          },
+          "semantic_class": {
+            "$ref": "#/components/schemas/SemanticClass"
+          },
+          "surface": {
+            "$ref": "#/components/schemas/Surface"
+          },
+          "supporting_claim_ids": {
+            "type": "array",
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "depends_on_proposition_ids": {
+            "type": "array",
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        }
+      },
+      "DraftFragment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fragment_id",
+          "surface",
+          "text"
+        ],
+        "properties": {
+          "fragment_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "surface": {
+            "$ref": "#/components/schemas/Surface"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "proposition_ids": {
+            "type": "array",
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        }
+      },
+      "DraftResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rendered_text",
+          "fragments"
+        ],
+        "properties": {
+          "rendered_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60000
+          },
+          "fragments": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/DraftFragment"
+            }
+          }
+        }
+      },
+      "ValidationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_kind",
+          "schema_version",
+          "request_id",
+          "idempotency_key",
+          "ruleset_version",
+          "validation_stage",
+          "submitted_at",
+          "research_mode_asserted",
+          "scope",
+          "documents",
+          "claims",
+          "candidates",
+          "proposed_litigation_groups",
+          "proposed_clusters",
+          "exclusions",
+          "propositions"
+        ],
+        "properties": {
+          "schema_kind": {
+            "const": "validation_request"
+          },
+          "schema_version": {
+            "const": "1.0.0"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$"
+          },
+          "ruleset_version": {
+            "const": "PJ1_V2_3"
+          },
+          "validation_stage": {
+            "type": "string",
+            "enum": [
+              "evidence_only",
+              "preflight",
+              "final"
+            ]
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "research_mode_asserted": {
+            "$ref": "#/components/schemas/ResearchMode"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ResearchScope"
+          },
+          "documents": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/DocumentObservation"
+            }
+          },
+          "claims": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/ClaimSubmission"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "maxItems": 250,
+            "items": {
+              "$ref": "#/components/schemas/CandidateSubmission"
+            }
+          },
+          "proposed_litigation_groups": {
+            "type": "array",
+            "maxItems": 250,
+            "items": {
+              "$ref": "#/components/schemas/ProposedLitigationGroup"
+            }
+          },
+          "proposed_clusters": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/ProposedCluster"
+            }
+          },
+          "exclusions": {
+            "type": "array",
+            "maxItems": 250,
+            "items": {
+              "$ref": "#/components/schemas/ExclusionSubmission"
+            }
+          },
+          "search_report": {
+            "$ref": "#/components/schemas/SearchReport"
+          },
+          "propositions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/PropositionSubmission"
+            }
+          },
+          "draft_response": {
+            "$ref": "#/components/schemas/DraftResponse"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "validation_stage": {
+                  "const": "final"
+                }
+              },
+              "required": [
+                "validation_stage"
+              ]
+            },
+            "then": {
+              "required": [
+                "draft_response"
+              ]
+            }
+          }
+        ],
+        "$comment": "research_mode_asserted e apenas uma alegacao. O servidor deriva research_mode e impoe search_report quando o modo derivado for mapping ou hybrid. Campos derivados e decisoes finais sao deliberadamente ausentes da requisicao para impedir autodeclaracao pelo GPT."
+      },
+      "DocumentDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "document_id",
+          "source_level",
+          "access_status",
+          "identity_status",
+          "target_identifier",
+          "eligible_fields",
+          "ineligible_fields",
+          "rule_ids"
+        ],
+        "properties": {
+          "document_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "source_level": {
+            "$ref": "#/components/schemas/SourceLevel"
+          },
+          "access_status": {
+            "$ref": "#/components/schemas/AccessStatus"
+          },
+          "identity_status": {
+            "$ref": "#/components/schemas/IdentityStatus"
+          },
+          "target_identifier": {
+            "$ref": "#/components/schemas/LegalIdentifier"
+          },
+          "normalized_primary_process_number": {
+            "$ref": "#/components/schemas/LegalIdentifier"
+          },
+          "normalized_cited_process_numbers": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/LegalIdentifier"
+            }
+          },
+          "eligible_fields": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ClaimField"
+            }
+          },
+          "ineligible_fields": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ClaimField"
+            }
+          },
+          "rule_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/RuleId"
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        }
+      },
+      "ClaimDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "field",
+          "source_document_id",
+          "source_level",
+          "claim_status",
+          "output_disposition",
+          "eligible_for_supporting_cohort",
+          "rule_ids"
+        ],
+        "properties": {
+          "claim_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "field": {
+            "$ref": "#/components/schemas/ClaimField"
+          },
+          "source_document_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "source_level": {
+            "$ref": "#/components/schemas/SourceLevel"
+          },
+          "claim_status": {
+            "$ref": "#/components/schemas/ClaimStatus"
+          },
+          "output_disposition": {
+            "$ref": "#/components/schemas/OutputDisposition"
+          },
+          "eligible_for_supporting_cohort": {
+            "type": "boolean"
+          },
+          "confirmed_value": {
+            "$ref": "#/components/schemas/ScalarClaimValue"
+          },
+          "approved_literal_excerpt": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "rule_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/RuleId"
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "output_disposition": {
+                  "const": "ALLOW_C_LITERAL"
+                }
+              },
+              "required": [
+                "output_disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "approved_literal_excerpt"
+              ],
+              "properties": {
+                "source_level": {
+                  "const": "C"
+                },
+                "eligible_for_supporting_cohort": {
+                  "const": false
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "eligible_for_supporting_cohort": {
+                  "const": true
+                }
+              },
+              "required": [
+                "eligible_for_supporting_cohort"
+              ]
+            },
+            "then": {
+              "properties": {
+                "source_level": {
+                  "enum": [
+                    "A",
+                    "B"
+                  ]
+                },
+                "claim_status": {
+                  "const": "confirmed"
+                },
+                "output_disposition": {
+                  "const": "ALLOW_AB"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "output_disposition": {
+                  "const": "ALLOW_AB"
+                }
+              },
+              "required": [
+                "output_disposition"
+              ]
+            },
+            "then": {
+              "properties": {
+                "source_level": {
+                  "enum": [
+                    "A",
+                    "B"
+                  ]
+                },
+                "claim_status": {
+                  "const": "confirmed"
+                },
+                "eligible_for_supporting_cohort": {
+                  "const": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CandidateDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "material_pending",
+          "candidate_resolved",
+          "rule_ids"
+        ],
+        "properties": {
+          "candidate_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "material_pending": {
+            "type": "boolean"
+          },
+          "candidate_resolved": {
+            "type": "boolean"
+          },
+          "resolution_code": {
+            "type": "string",
+            "enum": [
+              "validated_by_eligible_source",
+              "outside_scope_neutral",
+              "duplicate_supported",
+              "resolved_by_other_evidence",
+              "unresolved"
+            ]
+          },
+          "rule_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/RuleId"
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "candidate_resolved": {
+                  "const": false
+                }
+              },
+              "required": [
+                "candidate_resolved"
+              ]
+            },
+            "then": {
+              "properties": {
+                "resolution_code": {
+                  "const": "unresolved"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "GateResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gate_id",
+          "status",
+          "rule_ids",
+          "reasons"
+        ],
+        "properties": {
+          "gate_id": {
+            "type": "string",
+            "enum": [
+              "scope",
+              "recovery",
+              "identity",
+              "authenticity",
+              "provenance",
+              "finding",
+              "independence",
+              "countersearch",
+              "comparability",
+              "quantitative",
+              "temporal",
+              "saturation",
+              "hyperlinks",
+              "recommendation",
+              "calibration"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/GateStatus"
+          },
+          "rule_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/RuleId"
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          },
+          "evidence_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        }
+      },
+      "PreflightResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "preflight_id",
+          "target_proposition_id",
+          "field",
+          "semantic_class",
+          "supporting_cohort_count",
+          "eligible_ab_match_verified",
+          "confirmed_claim_count",
+          "independent_litigation_count",
+          "material_pending_count",
+          "countersearch_status",
+          "coverage_status",
+          "exclusion_integrity",
+          "comparability_status",
+          "status",
+          "empirical_ceiling",
+          "blocking_reasons"
+        ],
+        "properties": {
+          "preflight_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "target_proposition_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "field": {
+            "$ref": "#/components/schemas/ClaimField"
+          },
+          "semantic_class": {
+            "$ref": "#/components/schemas/SemanticClass"
+          },
+          "supporting_cohort_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eligible_ab_match_verified": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confirmed_claim_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "independent_litigation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "material_pending_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "countersearch_status": {
+            "$ref": "#/components/schemas/GateStatus"
+          },
+          "coverage_status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "limited",
+              "fail"
+            ]
+          },
+          "exclusion_integrity": {
+            "$ref": "#/components/schemas/GateStatus"
+          },
+          "comparability_status": {
+            "$ref": "#/components/schemas/GateStatus"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "empirical_ceiling": {
+            "$ref": "#/components/schemas/EmpiricalCeiling"
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "fail"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "empirical_ceiling": {
+                  "enum": [
+                    "none",
+                    "case_description"
+                  ]
+                }
+              },
+              "required": [
+                "blocking_reasons"
+              ]
+            }
+          }
+        ]
+      },
+      "PropositionDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "proposition_id",
+          "field",
+          "output_disposition",
+          "rule_ids",
+          "violation_ids"
+        ],
+        "properties": {
+          "proposition_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "field": {
+            "$ref": "#/components/schemas/ClaimField"
+          },
+          "output_disposition": {
+            "$ref": "#/components/schemas/OutputDisposition"
+          },
+          "approved_text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "rule_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/RuleId"
+            }
+          },
+          "violation_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "output_disposition": {
+                  "enum": [
+                    "ALLOW_AB",
+                    "ALLOW_USER_FACT",
+                    "ALLOW_C_LITERAL",
+                    "CANDIDATE_ONLY",
+                    "PENDING_ONLY"
+                  ]
+                }
+              },
+              "required": [
+                "output_disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "approved_text"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "output_disposition": {
+                  "const": "SUPPRESS"
+                }
+              },
+              "required": [
+                "output_disposition"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "approved_text"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Violation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "violation_id",
+          "severity",
+          "rule_id",
+          "code",
+          "message",
+          "affected_ids"
+        ],
+        "properties": {
+          "violation_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "rule_id": {
+            "$ref": "#/components/schemas/RuleId"
+          },
+          "code": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "message": {
+            "$ref": "#/components/schemas/ShortText"
+          },
+          "affected_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "remediation": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      },
+      "PendingItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "pending_id",
+          "kind",
+          "subject_id",
+          "reason",
+          "required_action"
+        ],
+        "properties": {
+          "pending_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "identity",
+              "access",
+              "claim",
+              "candidate",
+              "comparability",
+              "countersearch",
+              "coverage",
+              "saturation",
+              "semantic_review",
+              "other"
+            ]
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ShortText"
+          },
+          "required_action": {
+            "$ref": "#/components/schemas/ShortText"
+          }
+        }
+      },
+      "MetricDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric_id",
+          "field",
+          "status",
+          "cluster_id",
+          "independent_litigation_count",
+          "missing_count",
+          "preflight_id"
+        ],
+        "properties": {
+          "metric_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "field": {
+            "$ref": "#/components/schemas/ClaimField"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "allowed",
+              "blocked"
+            ]
+          },
+          "cluster_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "numerator": {
+            "type": "number"
+          },
+          "denominator": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "independent_litigation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "missing_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "preflight_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "computed_values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        }
+      },
+      "TerminalAudit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "checked_surfaces",
+          "residual_forbidden_values",
+          "collective_predicates_above_ceiling",
+          "contaminated_recommendation_clauses",
+          "false_suppressions"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "review_required"
+            ]
+          },
+          "checked_surfaces": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Surface"
+            }
+          },
+          "residual_forbidden_values": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "collective_predicates_above_ceiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "contaminated_recommendation_clauses": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "false_suppressions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShortText"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "pass"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "residual_forbidden_values": {
+                  "const": 0
+                },
+                "collective_predicates_above_ceiling": {
+                  "const": 0
+                },
+                "contaminated_recommendation_clauses": {
+                  "const": 0
+                },
+                "false_suppressions": {
+                  "const": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AuditRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "computed_at",
+          "engine_mode",
+          "implementation_version",
+          "request_digest",
+          "decision_digest",
+          "audit_digest"
+        ],
+        "properties": {
+          "computed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "engine_mode": {
+            "const": "deterministic"
+          },
+          "implementation_version": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "request_digest": {
+            "$ref": "#/components/schemas/DigestSha256"
+          },
+          "decision_digest": {
+            "$ref": "#/components/schemas/DigestSha256"
+          },
+          "audit_digest": {
+            "$ref": "#/components/schemas/DigestSha256"
+          }
+        }
+      },
+      "ReleaseDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "must_not_rewrite"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "released",
+              "withheld"
+            ]
+          },
+          "must_not_rewrite": {
+            "const": true
+          },
+          "approved_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60000
+          },
+          "safe_fallback_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "released"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "approved_text"
+              ],
+              "not": {
+                "required": [
+                  "safe_fallback_text"
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "withheld"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "safe_fallback_text"
+              ],
+              "not": {
+                "required": [
+                  "approved_text"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ValidationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_kind",
+          "schema_version",
+          "validation_id",
+          "request_id",
+          "idempotency_key",
+          "ruleset_version",
+          "status",
+          "research_mode",
+          "empirical_ceiling",
+          "recommendation_gate",
+          "document_decisions",
+          "claim_decisions",
+          "candidate_decisions",
+          "gate_results",
+          "preflights",
+          "proposition_decisions",
+          "violations",
+          "pending_items",
+          "metric_decisions",
+          "allowed_content",
+          "suppressed_content",
+          "terminal_audit",
+          "release",
+          "audit"
+        ],
+        "properties": {
+          "schema_kind": {
+            "const": "validation_response"
+          },
+          "schema_version": {
+            "const": "1.0.0"
+          },
+          "validation_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "request_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$"
+          },
+          "ruleset_version": {
+            "const": "PJ1_V2_3"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ValidationStatus"
+          },
+          "research_mode": {
+            "$ref": "#/components/schemas/ResearchMode"
+          },
+          "empirical_ceiling": {
+            "$ref": "#/components/schemas/EmpiricalCeiling"
+          },
+          "recommendation_gate": {
+            "$ref": "#/components/schemas/RecommendationGate"
+          },
+          "document_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentDecision"
+            }
+          },
+          "claim_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimDecision"
+            }
+          },
+          "candidate_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateDecision"
+            }
+          },
+          "gate_results": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/GateResult"
+            }
+          },
+          "preflights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreflightResult"
+            }
+          },
+          "proposition_decisions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PropositionDecision"
+            }
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Violation"
+            }
+          },
+          "pending_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingItem"
+            }
+          },
+          "metric_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricDecision"
+            }
+          },
+          "allowed_content": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "suppressed_content": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "terminal_audit": {
+            "$ref": "#/components/schemas/TerminalAudit"
+          },
+          "release": {
+            "$ref": "#/components/schemas/ReleaseDecision"
+          },
+          "audit": {
+            "$ref": "#/components/schemas/AuditRecord"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "APPROVED"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "violations": {
+                  "maxItems": 0
+                },
+                "pending_items": {
+                  "maxItems": 0
+                },
+                "terminal_audit": {
+                  "properties": {
+                    "status": {
+                      "const": "pass"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "recommendation_gate": {
+                  "const": "allowed"
+                }
+              },
+              "required": [
+                "recommendation_gate"
+              ]
+            },
+            "then": {
+              "properties": {
+                "gate_results": {
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "gate_id",
+                      "status"
+                    ],
+                    "properties": {
+                      "gate_id": {
+                        "const": "recommendation"
+                      },
+                      "status": {
+                        "const": "pass"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "APPROVED",
+                    "APPROVED_WITH_LIMITS"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "release": {
+                  "properties": {
+                    "status": {
+                      "const": "released"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "BLOCKED",
+                    "REVIEW_REQUIRED"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "release": {
+                  "properties": {
+                    "status": {
+                      "const": "withheld"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "terminal_audit": {
+                  "properties": {
+                    "status": {
+                      "const": "fail"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              },
+              "required": [
+                "terminal_audit"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": "BLOCKED"
+                }
+              }
+            }
+          }
+        ],
+        "$comment": "A resposta contÃ©m apenas estados calculados pelo servidor. O cliente nÃ£o pode elevar teto, liberar conteÃºdo ou reescrever texto retido."
+      },
+      "ActionError": {
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "object",
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patron.local/schemas/pj1-validation-contract-v1.schema.json",
+  "title": "PJ1 Validation Contract v1",
+  "description": "Contrato canÃ´nico e agnÃ³stico de transporte para requisiÃ§Ãµes e respostas do validador determinÃ­stico PJ1 V2.3.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ValidationRequest"
+    },
+    {
+      "$ref": "#/$defs/ValidationResponse"
+    }
+  ],
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "RuleId": {
+      "type": "string",
+      "pattern": "^PJ1-[A-Z]+-[0-9]{3}$"
+    },
+    "DigestSha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "NonEmptyText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "ShortText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "LegalIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "ScalarClaimValue": {
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "ResearchMode": {
+      "type": "string",
+      "enum": [
+        "application",
+        "mapping",
+        "audit",
+        "hybrid"
+      ]
+    },
+    "SourceLevel": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ]
+    },
+    "AccessStatus": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "not_found",
+        "restricted",
+        "generic_page",
+        "wrong_artifact",
+        "unavailable",
+        "unknown"
+      ]
+    },
+    "IdentityStatus": {
+      "type": "string",
+      "enum": [
+        "match",
+        "derived_reference",
+        "ambiguous",
+        "mismatch",
+        "unknown"
+      ]
+    },
+    "ClaimStatus": {
+      "type": "string",
+      "enum": [
+        "confirmed",
+        "partial",
+        "conflicting",
+        "unknown"
+      ]
+    },
+    "OutputDisposition": {
+      "type": "string",
+      "enum": [
+        "ALLOW_AB",
+        "ALLOW_USER_FACT",
+        "ALLOW_C_LITERAL",
+        "CANDIDATE_ONLY",
+        "PENDING_ONLY",
+        "SUPPRESS"
+      ]
+    },
+    "EmpiricalCeiling": {
+      "type": "string",
+      "enum": [
+        "none",
+        "case_description",
+        "qualitative_signal",
+        "descriptive_mapping"
+      ]
+    },
+    "RecommendationGate": {
+      "type": "string",
+      "enum": [
+        "allowed",
+        "blocked"
+      ]
+    },
+    "ValidationStatus": {
+      "type": "string",
+      "enum": [
+        "APPROVED",
+        "APPROVED_WITH_LIMITS",
+        "BLOCKED",
+        "REVIEW_REQUIRED"
+      ]
+    },
+    "GateStatus": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "pending",
+        "review_required"
+      ]
+    },
+    "Severity": {
+      "type": "string",
+      "enum": [
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ]
+    },
+    "SemanticClass": {
+      "type": "string",
+      "enum": [
+        "individual_case_description",
+        "official_rule",
+        "bounded_recurrence",
+        "profile_behavior",
+        "metric",
+        "temporal_trend",
+        "quantum",
+        "prediction",
+        "conditional_legal_application",
+        "documentary_next_step"
+      ]
+    },
+    "ClaimField": {
+      "type": "string",
+      "enum": [
+        "identity",
+        "process_number",
+        "decision_identifier",
+        "court",
+        "court_panel",
+        "rapporteur",
+        "judgment_date",
+        "publication_date",
+        "facts",
+        "legal_question",
+        "outcome",
+        "holding",
+        "ratio",
+        "autonomous_ground",
+        "obiter",
+        "official_rule",
+        "distinguishing",
+        "quantum_origin",
+        "quantum_final",
+        "citation",
+        "hyperlink",
+        "other"
+      ]
+    },
+    "DocumentKindObserved": {
+      "type": "string",
+      "enum": [
+        "full_text",
+        "case_page",
+        "metadata",
+        "official_reproduction",
+        "secondary",
+        "generic_or_unknown"
+      ]
+    },
+    "EvidenceOrigin": {
+      "type": "string",
+      "enum": [
+        "custom_gpt",
+        "user_supplied",
+        "server_fetcher",
+        "human_reviewer",
+        "imported_fixture"
+      ]
+    },
+    "Surface": {
+      "type": "string",
+      "enum": [
+        "body",
+        "heading",
+        "table",
+        "note",
+        "link",
+        "citation",
+        "recommendation",
+        "conclusion"
+      ]
+    },
+    "Period": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "ResearchScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "legal_question"
+      ],
+      "properties": {
+        "legal_question": {
+          "$ref": "#/$defs/NonEmptyText"
+        },
+        "practical_objective": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "tribunals": {
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        },
+        "court_panels": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        },
+        "rapporteurs": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        },
+        "case_classes": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "fact_profile": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "process_position": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "requested_outputs": {
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/SemanticClass"
+          }
+        }
+      }
+    },
+    "RetrievalObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "observed_at"
+      ],
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/EvidenceOrigin"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "http_status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "observed_access": {
+          "type": "string",
+          "enum": [
+            "opened",
+            "not_found",
+            "restricted",
+            "generic_page",
+            "wrong_artifact",
+            "unavailable",
+            "unknown"
+          ]
+        },
+        "content_hash": {
+          "$ref": "#/$defs/DigestSha256"
+        },
+        "content_reference": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "$comment": "Todos os campos sÃ£o observaÃ§Ãµes do cliente e nÃ£o equivalem a access_status=verified calculado pelo servidor."
+    },
+    "EvidenceFragment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fragment_id",
+        "locator",
+        "text"
+      ],
+      "properties": {
+        "fragment_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "locator": {
+          "$ref": "#/$defs/ShortText"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000
+        },
+        "claimed_fields": {
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ClaimField"
+          }
+        }
+      }
+    },
+    "DocumentObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "document_id",
+        "target_identifier",
+        "canonical_url",
+        "observed_kind",
+        "retrieval"
+      ],
+      "properties": {
+        "document_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "target_identifier": {
+          "$ref": "#/$defs/LegalIdentifier"
+        },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        },
+        "observed_kind": {
+          "$ref": "#/$defs/DocumentKindObserved"
+        },
+        "observed_primary_process_number": {
+          "$ref": "#/$defs/LegalIdentifier"
+        },
+        "observed_decision_identifier": {
+          "$ref": "#/$defs/LegalIdentifier"
+        },
+        "observed_cited_process_numbers": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/LegalIdentifier"
+          }
+        },
+        "retrieval": {
+          "$ref": "#/$defs/RetrievalObservation"
+        },
+        "fragments": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/EvidenceFragment"
+          }
+        },
+        "client_notes": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      },
+      "$comment": "O cliente nÃ£o pode enviar source_level_verified, access_status, identity_status ou elegibilidade como fatos finais.",
+      "x-pj1-rule-ids": [
+        "PJ1-AB-001",
+        "PJ1-ID-002",
+        "PJ1-C-003",
+        "PJ1-D-004",
+        "PJ1-E-005"
+      ]
+    },
+    "ClaimSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "field",
+        "value",
+        "source_document_id",
+        "source_locator"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "case_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "field": {
+          "$ref": "#/$defs/ClaimField"
+        },
+        "value": {
+          "$ref": "#/$defs/ScalarClaimValue"
+        },
+        "source_document_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "source_locator": {
+          "$ref": "#/$defs/ShortText"
+        },
+        "evidence_excerpt": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "explicitly_asserted": {
+          "type": "boolean"
+        },
+        "premise_claim_ids": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "conflict_group_asserted": {
+          "$ref": "#/$defs/Identifier"
+        }
+      },
+      "$comment": "Claim enviado pelo cliente Ã© uma submissÃ£o para validaÃ§Ã£o. claim_status, source_level e output_disposition sÃ£o exclusivamente calculados pelo servidor.",
+      "x-pj1-rule-ids": [
+        "PJ1-FIELD-006",
+        "PJ1-FIELD-007"
+      ]
+    },
+    "CandidateSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "target_identifier",
+        "discovered_by_document_ids",
+        "materiality_asserted"
+      ],
+      "properties": {
+        "candidate_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "target_identifier": {
+          "$ref": "#/$defs/LegalIdentifier"
+        },
+        "discovered_by_document_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "materiality_asserted": {
+          "type": "string",
+          "enum": [
+            "material",
+            "not_material",
+            "unknown"
+          ]
+        },
+        "materiality_reason": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "$comment": "A materialidade declarada nÃ£o resolve o candidato. O servidor deve calcular ou exigir revisÃ£o."
+    },
+    "ProposedLitigationGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "litigation_id",
+        "case_ids",
+        "relationship_basis"
+      ],
+      "properties": {
+        "litigation_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "case_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "relationship_basis": {
+          "$ref": "#/$defs/NonEmptyText"
+        },
+        "supporting_document_ids": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        }
+      },
+      "$comment": "Agrupamento proposto pelo cliente; independÃªncia Ã© recalculada ou revisada pelo servidor.",
+      "x-pj1-rule-ids": [
+        "PJ1-IND-009"
+      ]
+    },
+    "ProposedCluster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cluster_id",
+        "case_ids",
+        "criteria",
+        "comparability_asserted"
+      ],
+      "properties": {
+        "cluster_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "case_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 250,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "criteria": {
+          "$ref": "#/$defs/NonEmptyText"
+        },
+        "comparability_asserted": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unknown"
+          ]
+        }
+      },
+      "$comment": "Comparabilidade Ã© uma alegaÃ§Ã£o de entrada e deve virar review_required enquanto nÃ£o houver critÃ©rio normatizado."
+    },
+    "ExclusionSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exclusion_id",
+        "subject_type",
+        "subject_id",
+        "reason_code",
+        "reason"
+      ],
+      "properties": {
+        "exclusion_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "subject_type": {
+          "type": "string",
+          "enum": [
+            "document",
+            "candidate",
+            "case",
+            "litigation",
+            "claim"
+          ]
+        },
+        "subject_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": [
+            "duplicate_supported",
+            "outside_scope",
+            "procedural_only",
+            "incomparable_cluster",
+            "insufficient_source",
+            "identity_unresolved",
+            "claim_unconfirmed",
+            "other"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/NonEmptyText"
+        },
+        "candidate_resolved_asserted": {
+          "type": "boolean"
+        },
+        "resolution_evidence_document_ids": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        }
+      },
+      "$comment": "candidate_resolved_asserted nunca Ã© aceito sem regra/evidÃªncia de resoluÃ§Ã£o calculada pelo servidor.",
+      "x-pj1-rule-ids": [
+        "PJ1-CORP-008"
+      ]
+    },
+    "QueryRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "family",
+        "direction",
+        "query_text",
+        "executed_at"
+      ],
+      "properties": {
+        "query_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "family": {
+          "$ref": "#/$defs/ShortText"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "favorable",
+            "contrary",
+            "neutral"
+          ]
+        },
+        "query_text": {
+          "$ref": "#/$defs/NonEmptyText"
+        },
+        "executed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "observed_result_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "observed_new_material_candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "SearchReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queries",
+        "coverage_asserted",
+        "saturation_rounds_asserted"
+      ],
+      "properties": {
+        "required_families": {
+          "type": "array",
+          "maxItems": 30,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        },
+        "queries": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/QueryRecord"
+          }
+        },
+        "coverage_asserted": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "limited",
+            "fail",
+            "unknown"
+          ]
+        },
+        "coverage_notes": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "saturation_rounds_asserted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        }
+      },
+      "$comment": "Coverage e saturation sÃ£o alegaÃ§Ãµes. O servidor deve validar os critÃ©rios antes de convertÃª-las em gate pass."
+    },
+    "PropositionSubmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposition_id",
+        "field",
+        "text",
+        "semantic_class",
+        "surface"
+      ],
+      "properties": {
+        "proposition_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "field": {
+          "$ref": "#/$defs/ClaimField"
+        },
+        "text": {
+          "$ref": "#/$defs/NonEmptyText"
+        },
+        "semantic_class": {
+          "$ref": "#/$defs/SemanticClass"
+        },
+        "surface": {
+          "$ref": "#/$defs/Surface"
+        },
+        "supporting_claim_ids": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "depends_on_proposition_ids": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        }
+      }
+    },
+    "DraftFragment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fragment_id",
+        "surface",
+        "text"
+      ],
+      "properties": {
+        "fragment_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "surface": {
+          "$ref": "#/$defs/Surface"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "proposition_ids": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        }
+      }
+    },
+    "DraftResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rendered_text",
+        "fragments"
+      ],
+      "properties": {
+        "rendered_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60000
+        },
+        "fragments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/DraftFragment"
+          }
+        }
+      }
+    },
+    "ValidationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_kind",
+        "schema_version",
+        "request_id",
+        "idempotency_key",
+        "ruleset_version",
+        "validation_stage",
+        "submitted_at",
+        "research_mode_asserted",
+        "scope",
+        "documents",
+        "claims",
+        "candidates",
+        "proposed_litigation_groups",
+        "proposed_clusters",
+        "exclusions",
+        "propositions"
+      ],
+      "properties": {
+        "schema_kind": {
+          "const": "validation_request"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$"
+        },
+        "ruleset_version": {
+          "const": "PJ1_V2_3"
+        },
+        "validation_stage": {
+          "type": "string",
+          "enum": [
+            "evidence_only",
+            "preflight",
+            "final"
+          ]
+        },
+        "submitted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "research_mode_asserted": {
+          "$ref": "#/$defs/ResearchMode"
+        },
+        "scope": {
+          "$ref": "#/$defs/ResearchScope"
+        },
+        "documents": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/DocumentObservation"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ClaimSubmission"
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 250,
+          "items": {
+            "$ref": "#/$defs/CandidateSubmission"
+          }
+        },
+        "proposed_litigation_groups": {
+          "type": "array",
+          "maxItems": 250,
+          "items": {
+            "$ref": "#/$defs/ProposedLitigationGroup"
+          }
+        },
+        "proposed_clusters": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/ProposedCluster"
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "maxItems": 250,
+          "items": {
+            "$ref": "#/$defs/ExclusionSubmission"
+          }
+        },
+        "search_report": {
+          "$ref": "#/$defs/SearchReport"
+        },
+        "propositions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/PropositionSubmission"
+          }
+        },
+        "draft_response": {
+          "$ref": "#/$defs/DraftResponse"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "validation_stage": {
+                "const": "final"
+              }
+            },
+            "required": [
+              "validation_stage"
+            ]
+          },
+          "then": {
+            "required": [
+              "draft_response"
+            ]
+          }
+        }
+      ],
+      "$comment": "research_mode_asserted e apenas uma alegacao. O servidor deriva research_mode e impoe search_report quando o modo derivado for mapping ou hybrid. Campos derivados e decisoes finais sao deliberadamente ausentes da requisicao para impedir autodeclaracao pelo GPT."
+    },
+    "DocumentDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "document_id",
+        "source_level",
+        "access_status",
+        "identity_status",
+        "target_identifier",
+        "eligible_fields",
+        "ineligible_fields",
+        "rule_ids"
+      ],
+      "properties": {
+        "document_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "source_level": {
+          "$ref": "#/$defs/SourceLevel"
+        },
+        "access_status": {
+          "$ref": "#/$defs/AccessStatus"
+        },
+        "identity_status": {
+          "$ref": "#/$defs/IdentityStatus"
+        },
+        "target_identifier": {
+          "$ref": "#/$defs/LegalIdentifier"
+        },
+        "normalized_primary_process_number": {
+          "$ref": "#/$defs/LegalIdentifier"
+        },
+        "normalized_cited_process_numbers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/LegalIdentifier"
+          }
+        },
+        "eligible_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ClaimField"
+          }
+        },
+        "ineligible_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ClaimField"
+          }
+        },
+        "rule_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/RuleId"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      }
+    },
+    "ClaimDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "field",
+        "source_document_id",
+        "source_level",
+        "claim_status",
+        "output_disposition",
+        "eligible_for_supporting_cohort",
+        "rule_ids"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "field": {
+          "$ref": "#/$defs/ClaimField"
+        },
+        "source_document_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "source_level": {
+          "$ref": "#/$defs/SourceLevel"
+        },
+        "claim_status": {
+          "$ref": "#/$defs/ClaimStatus"
+        },
+        "output_disposition": {
+          "$ref": "#/$defs/OutputDisposition"
+        },
+        "eligible_for_supporting_cohort": {
+          "type": "boolean"
+        },
+        "confirmed_value": {
+          "$ref": "#/$defs/ScalarClaimValue"
+        },
+        "approved_literal_excerpt": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "rule_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/RuleId"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "output_disposition": {
+                "const": "ALLOW_C_LITERAL"
+              }
+            },
+            "required": [
+              "output_disposition"
+            ]
+          },
+          "then": {
+            "required": [
+              "approved_literal_excerpt"
+            ],
+            "properties": {
+              "source_level": {
+                "const": "C"
+              },
+              "eligible_for_supporting_cohort": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "eligible_for_supporting_cohort": {
+                "const": true
+              }
+            },
+            "required": [
+              "eligible_for_supporting_cohort"
+            ]
+          },
+          "then": {
+            "properties": {
+              "source_level": {
+                "enum": [
+                  "A",
+                  "B"
+                ]
+              },
+              "claim_status": {
+                "const": "confirmed"
+              },
+              "output_disposition": {
+                "const": "ALLOW_AB"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "output_disposition": {
+                "const": "ALLOW_AB"
+              }
+            },
+            "required": [
+              "output_disposition"
+            ]
+          },
+          "then": {
+            "properties": {
+              "source_level": {
+                "enum": [
+                  "A",
+                  "B"
+                ]
+              },
+              "claim_status": {
+                "const": "confirmed"
+              },
+              "eligible_for_supporting_cohort": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CandidateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "material_pending",
+        "candidate_resolved",
+        "rule_ids"
+      ],
+      "properties": {
+        "candidate_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "material_pending": {
+          "type": "boolean"
+        },
+        "candidate_resolved": {
+          "type": "boolean"
+        },
+        "resolution_code": {
+          "type": "string",
+          "enum": [
+            "validated_by_eligible_source",
+            "outside_scope_neutral",
+            "duplicate_supported",
+            "resolved_by_other_evidence",
+            "unresolved"
+          ]
+        },
+        "rule_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/RuleId"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "candidate_resolved": {
+                "const": false
+              }
+            },
+            "required": [
+              "candidate_resolved"
+            ]
+          },
+          "then": {
+            "properties": {
+              "resolution_code": {
+                "const": "unresolved"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "GateResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate_id",
+        "status",
+        "rule_ids",
+        "reasons"
+      ],
+      "properties": {
+        "gate_id": {
+          "type": "string",
+          "enum": [
+            "scope",
+            "recovery",
+            "identity",
+            "authenticity",
+            "provenance",
+            "finding",
+            "independence",
+            "countersearch",
+            "comparability",
+            "quantitative",
+            "temporal",
+            "saturation",
+            "hyperlinks",
+            "recommendation",
+            "calibration"
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/GateStatus"
+        },
+        "rule_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/RuleId"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        },
+        "evidence_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        }
+      }
+    },
+    "PreflightResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preflight_id",
+        "target_proposition_id",
+        "field",
+        "semantic_class",
+        "supporting_cohort_count",
+        "eligible_ab_match_verified",
+        "confirmed_claim_count",
+        "independent_litigation_count",
+        "material_pending_count",
+        "countersearch_status",
+        "coverage_status",
+        "exclusion_integrity",
+        "comparability_status",
+        "status",
+        "empirical_ceiling",
+        "blocking_reasons"
+      ],
+      "properties": {
+        "preflight_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "target_proposition_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "field": {
+          "$ref": "#/$defs/ClaimField"
+        },
+        "semantic_class": {
+          "$ref": "#/$defs/SemanticClass"
+        },
+        "supporting_cohort_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "eligible_ab_match_verified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confirmed_claim_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "independent_litigation_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "material_pending_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "countersearch_status": {
+          "$ref": "#/$defs/GateStatus"
+        },
+        "coverage_status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "limited",
+            "fail"
+          ]
+        },
+        "exclusion_integrity": {
+          "$ref": "#/$defs/GateStatus"
+        },
+        "comparability_status": {
+          "$ref": "#/$defs/GateStatus"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "empirical_ceiling": {
+          "$ref": "#/$defs/EmpiricalCeiling"
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "fail"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "empirical_ceiling": {
+                "enum": [
+                  "none",
+                  "case_description"
+                ]
+              }
+            },
+            "required": [
+              "blocking_reasons"
+            ]
+          }
+        }
+      ]
+    },
+    "PropositionDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposition_id",
+        "field",
+        "output_disposition",
+        "rule_ids",
+        "violation_ids"
+      ],
+      "properties": {
+        "proposition_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "field": {
+          "$ref": "#/$defs/ClaimField"
+        },
+        "output_disposition": {
+          "$ref": "#/$defs/OutputDisposition"
+        },
+        "approved_text": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "rule_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/RuleId"
+          }
+        },
+        "violation_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "output_disposition": {
+                "enum": [
+                  "ALLOW_AB",
+                  "ALLOW_USER_FACT",
+                  "ALLOW_C_LITERAL",
+                  "CANDIDATE_ONLY",
+                  "PENDING_ONLY"
+                ]
+              }
+            },
+            "required": [
+              "output_disposition"
+            ]
+          },
+          "then": {
+            "required": [
+              "approved_text"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "output_disposition": {
+                "const": "SUPPRESS"
+              }
+            },
+            "required": [
+              "output_disposition"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "approved_text"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Violation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "violation_id",
+        "severity",
+        "rule_id",
+        "code",
+        "message",
+        "affected_ids"
+      ],
+      "properties": {
+        "violation_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "rule_id": {
+          "$ref": "#/$defs/RuleId"
+        },
+        "code": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "message": {
+          "$ref": "#/$defs/ShortText"
+        },
+        "affected_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "remediation": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "PendingItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pending_id",
+        "kind",
+        "subject_id",
+        "reason",
+        "required_action"
+      ],
+      "properties": {
+        "pending_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "identity",
+            "access",
+            "claim",
+            "candidate",
+            "comparability",
+            "countersearch",
+            "coverage",
+            "saturation",
+            "semantic_review",
+            "other"
+          ]
+        },
+        "subject_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "reason": {
+          "$ref": "#/$defs/ShortText"
+        },
+        "required_action": {
+          "$ref": "#/$defs/ShortText"
+        }
+      }
+    },
+    "MetricDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "field",
+        "status",
+        "cluster_id",
+        "independent_litigation_count",
+        "missing_count",
+        "preflight_id"
+      ],
+      "properties": {
+        "metric_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "field": {
+          "$ref": "#/$defs/ClaimField"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "allowed",
+            "blocked"
+          ]
+        },
+        "cluster_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "numerator": {
+          "type": "number"
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "independent_litigation_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "preflight_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "computed_values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      }
+    },
+    "TerminalAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "checked_surfaces",
+        "residual_forbidden_values",
+        "collective_predicates_above_ceiling",
+        "contaminated_recommendation_clauses",
+        "false_suppressions"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail",
+            "review_required"
+          ]
+        },
+        "checked_surfaces": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Surface"
+          }
+        },
+        "residual_forbidden_values": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "collective_predicates_above_ceiling": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contaminated_recommendation_clauses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_suppressions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ShortText"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "pass"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "residual_forbidden_values": {
+                "const": 0
+              },
+              "collective_predicates_above_ceiling": {
+                "const": 0
+              },
+              "contaminated_recommendation_clauses": {
+                "const": 0
+              },
+              "false_suppressions": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AuditRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "computed_at",
+        "engine_mode",
+        "implementation_version",
+        "request_digest",
+        "decision_digest",
+        "audit_digest"
+      ],
+      "properties": {
+        "computed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "engine_mode": {
+          "const": "deterministic"
+        },
+        "implementation_version": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "request_digest": {
+          "$ref": "#/$defs/DigestSha256"
+        },
+        "decision_digest": {
+          "$ref": "#/$defs/DigestSha256"
+        },
+        "audit_digest": {
+          "$ref": "#/$defs/DigestSha256"
+        }
+      }
+    },
+    "ReleaseDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "must_not_rewrite"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "released",
+            "withheld"
+          ]
+        },
+        "must_not_rewrite": {
+          "const": true
+        },
+        "approved_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60000
+        },
+        "safe_fallback_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "released"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "approved_text"
+            ],
+            "not": {
+              "required": [
+                "safe_fallback_text"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "withheld"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "safe_fallback_text"
+            ],
+            "not": {
+              "required": [
+                "approved_text"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "ValidationResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_kind",
+        "schema_version",
+        "validation_id",
+        "request_id",
+        "idempotency_key",
+        "ruleset_version",
+        "status",
+        "research_mode",
+        "empirical_ceiling",
+        "recommendation_gate",
+        "document_decisions",
+        "claim_decisions",
+        "candidate_decisions",
+        "gate_results",
+        "preflights",
+        "proposition_decisions",
+        "violations",
+        "pending_items",
+        "metric_decisions",
+        "allowed_content",
+        "suppressed_content",
+        "terminal_audit",
+        "release",
+        "audit"
+      ],
+      "properties": {
+        "schema_kind": {
+          "const": "validation_response"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "validation_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "request_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$"
+        },
+        "ruleset_version": {
+          "const": "PJ1_V2_3"
+        },
+        "status": {
+          "$ref": "#/$defs/ValidationStatus"
+        },
+        "research_mode": {
+          "$ref": "#/$defs/ResearchMode"
+        },
+        "empirical_ceiling": {
+          "$ref": "#/$defs/EmpiricalCeiling"
+        },
+        "recommendation_gate": {
+          "$ref": "#/$defs/RecommendationGate"
+        },
+        "document_decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DocumentDecision"
+          }
+        },
+        "claim_decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ClaimDecision"
+          }
+        },
+        "candidate_decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CandidateDecision"
+          }
+        },
+        "gate_results": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/GateResult"
+          }
+        },
+        "preflights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PreflightResult"
+          }
+        },
+        "proposition_decisions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/PropositionDecision"
+          }
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Violation"
+          }
+        },
+        "pending_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PendingItem"
+          }
+        },
+        "metric_decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MetricDecision"
+          }
+        },
+        "allowed_content": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "suppressed_content": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "terminal_audit": {
+          "$ref": "#/$defs/TerminalAudit"
+        },
+        "release": {
+          "$ref": "#/$defs/ReleaseDecision"
+        },
+        "audit": {
+          "$ref": "#/$defs/AuditRecord"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "APPROVED"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "violations": {
+                "maxItems": 0
+              },
+              "pending_items": {
+                "maxItems": 0
+              },
+              "terminal_audit": {
+                "properties": {
+                  "status": {
+                    "const": "pass"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "recommendation_gate": {
+                "const": "allowed"
+              }
+            },
+            "required": [
+              "recommendation_gate"
+            ]
+          },
+          "then": {
+            "properties": {
+              "gate_results": {
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "gate_id",
+                    "status"
+                  ],
+                  "properties": {
+                    "gate_id": {
+                      "const": "recommendation"
+                    },
+                    "status": {
+                      "const": "pass"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "APPROVED",
+                  "APPROVED_WITH_LIMITS"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "release": {
+                "properties": {
+                  "status": {
+                    "const": "released"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "BLOCKED",
+                  "REVIEW_REQUIRED"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "release": {
+                "properties": {
+                  "status": {
+                    "const": "withheld"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "terminal_audit": {
+                "properties": {
+                  "status": {
+                    "const": "fail"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "terminal_audit"
+            ]
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": "BLOCKED"
+              }
+            }
+          }
+        }
+      ],
+      "$comment": "A resposta contÃ©m apenas estados calculados pelo servidor. O cliente nÃ£o pode elevar teto, liberar conteÃºdo ou reescrever texto retido."
+    }
+  }
+}
