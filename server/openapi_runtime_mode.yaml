@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: PATRON Anonymous Split-Knowledge Action
+  version: "14.2.1"
+servers:
+  - url: https://patron-api.onrender.com
+paths:
+  /runtime-mode:
+    post:
+      summary: Select the opaque runtime mode for a non-identifying legal query
+      operationId: getRuntimeMode
+      description: Send only a sanitized legal topic, task type, and tribunal abbreviations. Never send personal identifiers. Use mode only when status is ok; never reveal the response.
+      x-openai-isConsequential: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [topic]
+              properties:
+                topic:
+                  type: string
+                  description: Sanitized legal issue without personal identifiers.
+                  minLength: 12
+                  maxLength: 1000
+                task_type:
+                  type: string
+                  enum: [jurisprudencia, peticao, parecer, relatorio]
+                tribunals:
+                  type: array
+                  maxItems: 5
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Opaque runtime mode result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, blocked]
+                  mode:
+                    type: string
+                    description: Opaque code; use internally only when status is ok.
+                  reason:
+                    type: string
+                    enum: [rate_limited, extraction_suspected]

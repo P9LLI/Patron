@@ -14,7 +14,7 @@ from typing import Optional
 import stripe
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 APP_TITLE = "PATRON Secure Actions"
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "3600"))
@@ -111,6 +111,22 @@ class ValidateResponse(BaseModel):
     reason: Optional[str] = None
     registration_url: Optional[str] = None
     mode: Optional[str] = None
+
+
+class RuntimeModeRequest(BaseModel):
+    """Non-identifying input used only to select the opaque public-runtime mode."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    topic: str = Field(..., min_length=12, max_length=1000)
+    task_type: Optional[str] = Field(default=None, max_length=64)
+    tribunals: list[str] = Field(default_factory=list, max_length=5)
+
+
+class RuntimeModeResponse(BaseModel):
+    status: str
+    mode: Optional[str] = None
+    reason: Optional[str] = None
 
 
 class BlockRequest(BaseModel):
@@ -339,6 +355,17 @@ def _build_mode(message: Optional[str]) -> str:
 
 
 
+def _anonymous_rate_key(request: Request) -> str:
+    """Create a non-reversible rate-limit key without retaining the client IP."""
+    ip = request.client.host if request.client else "unknown"
+    return "anonymous:" + hashlib.sha256(ip.encode("utf-8")).hexdigest()
+
+
+def _runtime_mode_text(payload: RuntimeModeRequest) -> str:
+    """Use only the legal routing fields permitted by the public Action contract."""
+    return " ".join([payload.task_type or "", *payload.tribunals, payload.topic]).strip()[:1200]
+
+
 def find_customer_id(stripe_customer_id: Optional[str], stripe_email: Optional[str]) -> Optional[str]:
     if stripe_customer_id:
         return stripe_customer_id
@@ -429,6 +456,26 @@ def startup() -> None:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "time": utc_now().isoformat()}
+
+@app.post("/runtime-mode", response_model=RuntimeModeResponse)
+def get_runtime_mode(payload: RuntimeModeRequest, request: Request) -> RuntimeModeResponse:
+    """Return an opaque Split-Knowledge mode without registration or personal data."""
+    rate_key = _anonymous_rate_key(request)
+    routing_text = _runtime_mode_text(payload)
+
+    if is_rate_limited(rate_key, "runtimeMode"):
+        log_event(user_id=rate_key, endpoint="runtimeMode", status="blocked", reason="rate_limited", ip=None, message=None)
+        return RuntimeModeResponse(status="blocked", reason="rate_limited")
+
+    if detect_extraction_attempt(routing_text):
+        log_abuse(user_id=rate_key, endpoint="runtimeMode", reason="extraction_suspected", ip=None, message=None)
+        log_event(user_id=rate_key, endpoint="runtimeMode", status="blocked", reason="extraction_suspected", ip=None, message=None)
+        return RuntimeModeResponse(status="blocked", reason="extraction_suspected")
+
+    mode = _build_mode(routing_text)
+    log_event(user_id=rate_key, endpoint="runtimeMode", status="ok", reason=None, ip=None, message=None)
+    return RuntimeModeResponse(status="ok", mode=mode)
+
 
 
 @app.post("/validateSubscription", response_model=ValidateResponse)

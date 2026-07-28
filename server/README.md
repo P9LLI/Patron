@@ -39,6 +39,14 @@ uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 4. Replace the Action schema with `server/openapi.yaml`.
 5. Test with a fresh chat, sending e-mail + OAB/estado before the legal query.
 
+## Anonymous v14.2 Split-Knowledge setup
+1. Activate Code Interpreter and attach `patron/runtime_public/patron_runtime.py`.
+2. Paste `server/gpt_instructions_v14_2_anonymous_split_knowledge.txt` into the GPT instructions.
+3. Replace the GPT Action schema with `server/openapi_runtime_mode.yaml`.
+4. Keep Action authentication as `None`; the action neither requires nor accepts OAB, e-mail, CPF or registration data.
+5. Do not expose the legacy `openapi.yaml` in this GPT: it includes subscription and administrative operations.
+6. Test a new legal chat without any personal data.
+
 ## Registration-only mode
 1. Set `BILLING_MODE=registration_only`.
 2. Set `REGISTRATION_BACKEND=stripe` if you want registration persisted in Stripe customers.
