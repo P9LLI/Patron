@@ -1,0 +1,122 @@
+contract: patron-gpt-workflow
+contract_version: 1.0.0
+workflow_version: precedent_mapping-3.3.0
+runtime_version: 3.3.0
+base_path: /gpt-workflow/v1
+compatibility:
+  model: additive-entrypoint
+  legacy_entrypoint: server.main_pj1_validator:app
+  additive_entrypoint: server.main_gpt_workflow:app
+  legacy_routes_modified: false
+  legacy_database_modified: false
+authentication:
+  type: http_bearer
+  environment_variable: GPT_WORKFLOW_API_BEARER_TOKEN
+  scope: all operations except health
+idempotency:
+  header: Idempotency-Key
+  applies_to: all_mutating_operations
+  same_key_same_payload: replay_original_response
+  same_key_different_payload: IDEMPOTENCY_CONFLICT
+  retention_days_default: 30
+pagination:
+  resource: frozen_repository_batches
+  batch_size_default: 15
+  batch_size_minimum: 5
+  batch_size_maximum: 25
+  order: candidate_id_content_hash_process_url
+repository:
+  persistence: isolated_sqlite
+  environment_variable: GPT_WORKFLOW_DB
+  frozen_versions_are_immutable: true
+  post_freeze_candidate_policy: create_new_version
+  deduplication_keys:
+    - normalized_content_hash
+    - process_number
+    - canonical_final_url
+  content_hash_algorithm: sha256_canonical_json
+states:
+  ordered:
+    - CREATED
+    - PLANNED
+    - DISCOVERY_OPEN
+    - CANDIDATES_REGISTERED
+    - REPOSITORY_FROZEN
+    - SEMANTIC_SELECTION_COMPLETED
+    - FINALISTS_VERIFIED
+    - SAMPLE_ADMITTED
+    - CLAIMS_RESOLVED
+    - DRAFT_SUBMITTED
+    - ANSWER_RELEASED
+  blockers:
+    - PLAN_BLOCKED
+    - DISCOVERY_INCOMPLETE
+    - REPOSITORY_NOT_FROZEN
+    - SELECTION_INCOMPLETE
+    - FINALIST_NOT_VERIFIED
+    - SAMPLE_BLOCKED
+    - CLAIMS_INCOMPLETE
+    - DRAFT_BLOCKED
+    - EXECUTION_INVALIDATED
+retention_states:
+  - TEMPORARY
+  - ACTIVE
+  - FINALIZED
+  - AUDIT_MINIMUM
+  - EXPIRED
+  - DELETED
+releases:
+  - sources_release
+  - repository_release
+  - selection_release
+  - sample_release
+  - claims_release
+  - answer_release
+limits:
+  candidate_max_bytes: 65536
+  excerpt_max_bytes: 8192
+  excerpts_max_count: 8
+  request_max_bytes: 524288
+  draft_max_bytes: 131072
+  execution_max_bytes: 52428800
+  candidates_max_count: 5000
+  repository_versions_max: 10
+  log_max_bytes: 5242880
+  temporary_retention_days: 7
+  configurable_by_environment: true
+disk_policy:
+  warning_percent_default: 70
+  restricted_percent_default: 85
+  critical_percent_default: 95
+  restricted_allowed_operations:
+    - get_execution
+    - get_release
+    - cleanup
+    - health
+operations:
+  - {method: POST, path: '/executions', operationId: createGPTWorkflowExecution}
+  - {method: POST, path: '/executions/{execution_id}/queries', operationId: registerGPTWorkflowQueries}
+  - {method: POST, path: '/executions/{execution_id}/candidates', operationId: registerGPTWorkflowCandidates}
+  - {method: POST, path: '/executions/{execution_id}/repositories/freeze', operationId: freezeGPTWorkflowRepository}
+  - {method: GET, path: '/repositories/{repository_id}/batches/{batch_id}', operationId: getGPTWorkflowBatch}
+  - {method: POST, path: '/repositories/{repository_id}/semantic-selections', operationId: submitGPTWorkflowSemanticSelection}
+  - {method: POST, path: '/executions/{execution_id}/finalist-verifications', operationId: submitGPTWorkflowFinalistVerifications}
+  - {method: POST, path: '/executions/{execution_id}/sample', operationId: admitGPTWorkflowSample}
+  - {method: POST, path: '/executions/{execution_id}/claims', operationId: resolveGPTWorkflowClaims}
+  - {method: POST, path: '/executions/{execution_id}/audit-draft', operationId: auditGPTWorkflowDraft}
+  - {method: GET, path: '/executions/{execution_id}', operationId: getGPTWorkflowExecution}
+  - {method: GET, path: '/executions/{execution_id}/release', operationId: getGPTWorkflowRelease}
+  - {method: POST, path: '/admin/cleanup', operationId: cleanupGPTWorkflowStorage}
+  - {method: GET, path: '/health', operationId: getGPTWorkflowHealth}
+receipts:
+  immutable: true
+  hash_algorithm: sha256
+  kinds:
+    - workflow
+    - repository
+    - sample
+    - claims
+errors:
+  schema:
+    required: [error, message, retryable]
+    optional: [details, current_state, expected_state, storage_usage_percent, allowed_operations]

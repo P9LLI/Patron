@@ -1,0 +1,24 @@
+{
+  "gpt_workflow": {
+    "contract": "1.0.0",
+    "workflow": "precedent_mapping-3.3.0",
+    "runtime": "3.3.0",
+    "entrypoint": "server.main_gpt_workflow:app",
+    "base_path": "/gpt-workflow/v1"
+  },
+  "preserved": {
+    "patron_backend": "14.2",
+    "pj1_validator": "1.0.0",
+    "previous_entrypoint": "server.main_pj1_validator:app",
+    "legacy_database_schema": "unchanged",
+    "legacy_routes": "unchanged"
+  },
+  "compatibility": [
+    {
+      "from": "server.main_pj1_validator:app",
+      "to": "server.main_gpt_workflow:app",
+      "compatible": true,
+      "rollback": "restore previous start command"
+    }
+  ]
+}

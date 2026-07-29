@@ -1,0 +1,152 @@
+{
+  "create_execution": {
+    "request": {
+      "input": {
+        "legal_question": "Qual é o tratamento do TJSP para o tema delimitado?",
+        "tribunals": ["TJSP"]
+      }
+    },
+    "response_excerpt": {
+      "execution": {
+        "execution_id": "exec-0123456789ABCDEF",
+        "state": "CREATED"
+      },
+      "workflow_receipt": {
+        "workflow_version": "precedent_mapping-3.3.0",
+        "runtime_version": "3.3.0",
+        "api_contract_version": "1.0.0",
+        "task_type": "precedent_mapping",
+        "sample_required": true,
+        "repository_required": true
+      }
+    }
+  },
+  "queries": {
+    "queries": [
+      {"query_id": "Q1", "text": "site:tjsp.jus.br tema jurídico delimitado", "family": "direct"},
+      {"query_id": "Q2", "text": "site:tjsp.jus.br tese contrária", "family": "countersearch"}
+    ]
+  },
+  "candidates": {
+    "candidates": [
+      {
+        "candidate_id": "CAND-0042",
+        "source_url": "https://esaj.tjsp.jus.br/example",
+        "final_url": "https://esaj.tjsp.jus.br/example",
+        "tribunal": "TJSP",
+        "document_type": "acordao",
+        "process_number": "1000001-11.2024.8.26.0001",
+        "container_process": "1000001-11.2024.8.26.0001",
+        "target_process": "1000001-11.2024.8.26.0001",
+        "container_relator": "Nome confirmado",
+        "target_relator": "Nome confirmado",
+        "chamber": "1ª Câmara",
+        "judgment_date": "2024-01-10",
+        "official_source": true,
+        "access_status": "accessible",
+        "evidence_mode": "direct",
+        "query_ids": ["Q1"],
+        "excerpts": {
+          "identity": "Trecho curto do cabeçalho oficial.",
+          "holding": "Trecho curto do dispositivo."
+        },
+        "pages": {"identity": 1, "holding": 6},
+        "full_text_reference": "DOC-0042"
+      }
+    ]
+  },
+  "freeze_response": {
+    "repository_receipt": {
+      "repository_id": "REP-0123456789ABCDEF",
+      "execution_id": "exec-0123456789ABCDEF",
+      "repository_version": 1,
+      "candidate_count": 1,
+      "content_hash": "sha256-example",
+      "batch_count": 1,
+      "frozen_at": "2026-07-29T12:00:00+00:00",
+      "receipt_hash": "sha256-example"
+    },
+    "batches": [
+      {
+        "batch_id": "BATCH-0123456789ABCDEF",
+        "index": 1,
+        "candidate_ids": ["CAND-0042"]
+      }
+    ]
+  },
+  "semantic_selection": {
+    "batch_id": "BATCH-0123456789ABCDEF",
+    "repository_id": "REP-0123456789ABCDEF",
+    "repository_version": 1,
+    "assessments": [
+      {
+        "candidate_id": "CAND-0042",
+        "identity_status": "confirmed",
+        "relator_status": "confirmed",
+        "theme_class": "T1",
+        "preliminary_bucket": "main_candidate",
+        "requires_full_text_review": true,
+        "inclusion_rule_ids": ["I-01"],
+        "exclusion_rule_ids": [],
+        "evidence_excerpt_ids": ["EX-42-A"],
+        "reason": "Identidade e aderência temática confirmadas na fonte oficial."
+      }
+    ]
+  },
+  "verification": {
+    "verifications": [
+      {
+        "candidate_id": "CAND-0042",
+        "verification_status": "verified",
+        "identity": {"status": "confirmed", "evidence": "Cabeçalho oficial."},
+        "relator": {"status": "confirmed", "name": "Nome confirmado", "evidence": "Cabeçalho oficial."},
+        "theme": {"class": "T1", "central_issue": "Questão delimitada", "evidence": "Ementa."},
+        "holding": {"text": "Recurso desprovido.", "page": 6},
+        "quantum": {"value": null, "currency": "BRL", "page": null}
+      }
+    ]
+  },
+  "sample": {
+    "candidates": [{"candidate_id": "CAND-0042", "bucket": "main"}]
+  },
+  "claims": {
+    "claims": [
+      {
+        "claim_id": "C1",
+        "status": "supported",
+        "allowed_scope": "descrição individual do holding",
+        "evidence_ids": ["EX-42-A"],
+        "authorized_processes": ["1000001-11.2024.8.26.0001"],
+        "authorized_amounts": [],
+        "authorized_dates": [],
+        "authorized_summulas": [],
+        "forbidden_inferences": ["tendência", "frequência", "estabilidade temporal"]
+      }
+    ]
+  },
+  "draft_audit": {
+    "repository_id": "REP-0123456789ABCDEF",
+    "repository_version": 1,
+    "draft_text": "No processo 1000001-11.2024.8.26.0001, o recurso foi desprovido.",
+    "statements": [
+      {
+        "statement_id": "S1",
+        "text": "No processo 1000001-11.2024.8.26.0001, o recurso foi desprovido.",
+        "claim_id": "C1",
+        "evidence_ids": ["EX-42-A"],
+        "entities": {
+          "processes": ["1000001-11.2024.8.26.0001"],
+          "amounts": [],
+          "dates": [],
+          "summulas": [],
+          "magistrates": [],
+          "chambers": []
+        }
+      }
+    ]
+  },
+  "headers": {
+    "Authorization": "Bearer <configured-service-token>",
+    "Idempotency-Key": "client-generated-stable-key"
+  }
+}

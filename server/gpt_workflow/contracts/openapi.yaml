@@ -1,0 +1,441 @@
+openapi: 3.1.0
+info:
+  title: PATRON GPT Workflow API
+  version: 1.0.0
+  description: Deterministic persistence, state validation and release gates for GPT-supplied legal research.
+servers:
+  - url: https://patron-api.onrender.com
+paths:
+  /gpt-workflow/v1/executions:
+    post:
+      operationId: createGPTWorkflowExecution
+      summary: Create an immutable workflow execution receipt
+      security: [{serviceBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateExecutionRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '413': {$ref: '#/components/responses/ErrorResponse'}
+        '507': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/queries:
+    post:
+      operationId: registerGPTWorkflowQueries
+      summary: Register the discovery query portfolio
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [queries]
+              additionalProperties: false
+              properties:
+                queries:
+                  type: array
+                  minItems: 1
+                  items: {$ref: '#/components/schemas/Query'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/candidates:
+    post:
+      operationId: registerGPTWorkflowCandidates
+      summary: Persist and deduplicate candidate records
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidates]
+              additionalProperties: false
+              properties:
+                candidates:
+                  type: array
+                  minItems: 1
+                  items: {$ref: '#/components/schemas/Candidate'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '413': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+        '507': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/repositories/freeze:
+    post:
+      operationId: freezeGPTWorkflowRepository
+      summary: Freeze the current repository version and produce stable batches
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/repositories/{repository_id}/batches/{batch_id}:
+    get:
+      operationId: getGPTWorkflowBatch
+      summary: Read one immutable frozen-repository batch
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/RepositoryId'}
+        - {$ref: '#/components/parameters/BatchId'}
+      responses:
+        '200':
+          description: Stable batch
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Batch'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/repositories/{repository_id}/semantic-selections:
+    post:
+      operationId: submitGPTWorkflowSemanticSelection
+      summary: Register GPT assessments without recomputing their semantics
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/RepositoryId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SemanticSelection'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/finalist-verifications:
+    post:
+      operationId: submitGPTWorkflowFinalistVerifications
+      summary: Persist selective finalist verification
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verifications]
+              properties:
+                verifications:
+                  type: array
+                  minItems: 1
+                  items: {$ref: '#/components/schemas/Verification'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/sample:
+    post:
+      operationId: admitGPTWorkflowSample
+      summary: Admit candidates into explicit sample buckets
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Sample'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/claims:
+    post:
+      operationId: resolveGPTWorkflowClaims
+      summary: Register exact claim authorization scopes
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claims]
+              properties:
+                claims:
+                  type: array
+                  minItems: 1
+                  items: {$ref: '#/components/schemas/Claim'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/audit-draft:
+    post:
+      operationId: auditGPTWorkflowDraft
+      summary: Deterministically audit and release or block a draft
+      security: [{serviceBearer: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ExecutionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DraftAuditRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '413': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}:
+    get:
+      operationId: getGPTWorkflowExecution
+      summary: Read execution, receipt, current state and blockers
+      security: [{serviceBearer: []}]
+      parameters: [{$ref: '#/components/parameters/ExecutionId'}]
+      responses:
+        '200': {description: Execution status}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/executions/{execution_id}/release:
+    get:
+      operationId: getGPTWorkflowRelease
+      summary: Read release counters and latest audit
+      security: [{serviceBearer: []}]
+      parameters: [{$ref: '#/components/parameters/ExecutionId'}]
+      responses:
+        '200': {description: Release status}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /gpt-workflow/v1/admin/cleanup:
+    post:
+      operationId: cleanupGPTWorkflowStorage
+      summary: Safely clean only expired GPT workflow data
+      security: [{serviceBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        '200': {$ref: '#/components/responses/MutationResponse'}
+  /gpt-workflow/v1/health:
+    get:
+      operationId: getGPTWorkflowHealth
+      summary: Read isolated database and disk health
+      responses:
+        '200':
+          description: Health and storage status
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Health'}
+components:
+  securitySchemes:
+    serviceBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-service-token
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 200}
+    ExecutionId:
+      name: execution_id
+      in: path
+      required: true
+      schema: {type: string, pattern: '^exec-[A-F0-9]{16}$'}
+    RepositoryId:
+      name: repository_id
+      in: path
+      required: true
+      schema: {type: string}
+    BatchId:
+      name: batch_id
+      in: path
+      required: true
+      schema: {type: string}
+  responses:
+    MutationResponse:
+      description: Deterministic operation result
+      headers:
+        X-GPT-Workflow-Idempotent-Replay:
+          schema: {type: string, enum: ['true', 'false']}
+    ErrorResponse:
+      description: Structured workflow error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    CreateExecutionRequest:
+      type: object
+      required: [input]
+      additionalProperties: false
+      properties:
+        input: {type: object}
+    Query:
+      type: object
+      required: [query_id, text]
+      additionalProperties: false
+      properties:
+        query_id: {type: string, minLength: 1, maxLength: 128}
+        text: {type: string, minLength: 1, maxLength: 4000}
+        family: {type: [string, 'null'], maxLength: 128}
+    Candidate:
+      type: object
+      required: [candidate_id, source_url]
+      properties:
+        candidate_id: {type: string, minLength: 1, maxLength: 128}
+        source_url: {type: string, format: uri}
+        final_url: {type: [string, 'null'], format: uri}
+        tribunal: {type: [string, 'null']}
+        document_type: {type: [string, 'null']}
+        process_number: {type: [string, 'null']}
+        container_process: {type: [string, 'null']}
+        target_process: {type: [string, 'null']}
+        container_relator: {type: [string, 'null']}
+        target_relator: {type: [string, 'null']}
+        chamber: {type: [string, 'null']}
+        judgment_date: {type: [string, 'null']}
+        official_source: {type: [boolean, 'null']}
+        access_status: {type: [string, 'null']}
+        evidence_mode: {type: [string, 'null']}
+        query_ids: {type: array, items: {type: string}, uniqueItems: true}
+        excerpts: {type: object, maxProperties: 8, additionalProperties: {type: [string, 'null'], maxLength: 8192}}
+        pages: {type: object, additionalProperties: {type: [integer, 'null'], minimum: 1}}
+        full_text_reference: {type: [string, 'null']}
+        content_hash: {type: [string, 'null'], description: Ignored and derived by the server}
+    Batch:
+      type: object
+      required: [batch_id, repository_id, repository_version, index, total_batches, repository_hash, status, candidates]
+      properties:
+        batch_id: {type: string}
+        repository_id: {type: string}
+        repository_version: {type: integer, minimum: 1}
+        index: {type: integer, minimum: 1}
+        total_batches: {type: integer, minimum: 1}
+        repository_hash: {type: string}
+        status: {type: string, enum: [pending, processed]}
+        candidates: {type: array, minItems: 1, maxItems: 25, items: {$ref: '#/components/schemas/Candidate'}}
+    SemanticSelection:
+      type: object
+      required: [batch_id, repository_id, repository_version, assessments]
+      additionalProperties: false
+      properties:
+        batch_id: {type: string}
+        repository_id: {type: string}
+        repository_version: {type: integer, minimum: 1}
+        assessments:
+          type: array
+          items:
+            type: object
+            required: [candidate_id, identity_status, relator_status, theme_class, preliminary_bucket, requires_full_text_review, inclusion_rule_ids, exclusion_rule_ids, evidence_excerpt_ids, reason]
+            properties:
+              candidate_id: {type: string}
+              identity_status: {type: string, enum: [confirmed, unconfirmed, conflicting, not_applicable]}
+              relator_status: {type: string, enum: [confirmed, unconfirmed, conflicting, not_applicable]}
+              theme_class: {type: string}
+              preliminary_bucket: {type: string}
+              requires_full_text_review: {type: boolean}
+              inclusion_rule_ids: {type: array, items: {type: string}}
+              exclusion_rule_ids: {type: array, items: {type: string}}
+              evidence_excerpt_ids: {type: array, minItems: 1, items: {type: string}}
+              reason: {type: string, minLength: 1, maxLength: 4000}
+    Verification:
+      type: object
+      required: [candidate_id, verification_status]
+      properties:
+        candidate_id: {type: string}
+        verification_status: {type: string, enum: [verified, unverified, rejected]}
+        identity: {type: object}
+        relator: {type: object}
+        theme: {type: object}
+        holding: {type: object}
+        quantum: {type: object}
+    Sample:
+      type: object
+      required: [candidates]
+      additionalProperties: false
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            required: [candidate_id, bucket]
+            additionalProperties: false
+            properties:
+              candidate_id: {type: string}
+              bucket: {type: string, enum: [main, supplemental, contextual, excluded, unverified]}
+    Claim:
+      type: object
+      required: [claim_id, status, allowed_scope, evidence_ids, authorized_processes, authorized_amounts, authorized_dates, authorized_summulas, forbidden_inferences]
+      properties:
+        claim_id: {type: string}
+        status: {type: string, enum: [supported, context_only, abstain, general_guidance, not_requested]}
+        allowed_scope: {type: string}
+        evidence_ids: {type: array, items: {type: string}}
+        authorized_processes: {type: array, items: {type: string}}
+        authorized_amounts: {type: array, items: {type: string}}
+        authorized_dates: {type: array, items: {type: string}}
+        authorized_summulas: {type: array, items: {type: [string, integer]}}
+        forbidden_inferences: {type: array, items: {type: string}}
+    DraftAuditRequest:
+      type: object
+      required: [repository_id, repository_version, draft_text, statements]
+      additionalProperties: false
+      properties:
+        repository_id: {type: string}
+        repository_version: {type: integer, minimum: 1}
+        draft_text: {type: string, minLength: 1, maxLength: 131072}
+        statements:
+          type: array
+          items:
+            type: object
+            required: [statement_id, text, claim_id, evidence_ids, entities]
+            properties:
+              statement_id: {type: string}
+              text: {type: string}
+              claim_id: {type: string}
+              evidence_ids: {type: array, items: {type: string}}
+              entities: {type: object}
+    Health:
+      type: object
+      required: [status, database, storage, time]
+      properties:
+        status: {type: string, enum: [ok, degraded]}
+        database: {type: string, enum: [ok, error]}
+        storage:
+          type: object
+          required: [capacity_bytes, used_bytes, available_bytes, usage_percent, status]
+          properties:
+            capacity_bytes: {type: integer}
+            used_bytes: {type: integer}
+            available_bytes: {type: integer}
+            usage_percent: {type: number}
+            status: {type: string, enum: [ok, warning, restricted, critical]}
+        time: {type: string, format: date-time}
+    Error:
+      type: object
+      required: [error, message, retryable]
+      properties:
+        error: {type: string}
+        message: {type: string}
+        retryable: {type: boolean}
+        storage_usage_percent: {type: number}
+        allowed_operations: {type: array, items: {type: string}}
